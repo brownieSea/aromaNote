@@ -2039,7 +2039,9 @@ function openOilDetail(oil) {
   // 관련 레시피 라벨에 카운트 업데이트
   // 카운트는 렌더 시 od-related-count에 표시
   if (!related.length) {
-    document.getElementById('od-related-list').innerHTML = '<div style="font-size:13px;color:var(--text-3)">관련 레시피가 없어요.</div>';
+    document.getElementById('od-related-count').textContent = '0개';
+    document.getElementById('od-related-chips').innerHTML = '';
+    document.getElementById('od-related-list').innerHTML = '<div class="empty-box" style="margin:0 18px;text-align:center"><p>관련 레시피가 없어요.</p></div>';
   } else {
     // 카테고리 목록 추출
     const relatedCats = ['전체', ...new Set(related.map(r => r.category).filter(Boolean))];
