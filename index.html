@@ -2048,23 +2048,17 @@ function openOilDetail(oil) {
     ).join('');
 
     const gridHtml = (list) => list.map(r => `
-      <div class="card card-press" style="padding:12px;cursor:pointer" onclick="openRecipeDetail('${r.id}')">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-          <div style="font-size:13px;font-weight:500;color:var(--text-1);line-height:1.3;flex:1;padding-right:4px">${r.title}</div>
-          <span class="badge badge-blue" style="flex-shrink:0">${r.method||''}</span>
-        </div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px">
-          ${r.category ? `<span class="badge badge-amber">${r.category}</span>` : ''}
-          ${r.difficulty ? `<span style="font-size:10px;color:var(--text-3)">${r.difficulty}</span>` : ''}
-        </div>
-        ${r.oils_list ? `<div class="oil-tags">${r.oils_list.split(',').slice(0,3).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>` : ''}
+      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
+        <div class="rm-method">${r.method||'혼합'}</div>
+        <div class="rm-title">${r.title}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
       </div>`).join('');
 
     // 카운트 + 칩을 헤더 한 줄에
     document.getElementById('od-related-count').textContent = related.length + '개';
     document.getElementById('od-related-chips').innerHTML = chipHtml;
     document.getElementById('od-related-list').innerHTML =
-      `<div id="od-related-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 18px">${gridHtml(related)}</div>`;
+      `<div id="od-related-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px">${gridHtml(related)}</div>`;
 
     // 필터 함수 — 전역
     window._odRelated = related;
