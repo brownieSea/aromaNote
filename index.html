@@ -341,8 +341,7 @@ body { font-family: var(--sans); color: var(--text-1); }
 #page-recipe-detail.active { display: block; }
 .detail-hero {
   background: var(--accent);
-  padding: 20px 18px 22px;
-  padding-right: 80px;
+  padding: 20px 100px 22px 18px;
   position: relative;
 }
 .detail-back {
@@ -745,13 +744,13 @@ body { font-family: var(--sans); color: var(--text-1); }
   <!-- RECIPE DETAIL -->
   <div class="page pb-nav" id="page-recipe-detail">
     <div class="detail-hero">
-      <div style="position:absolute;top:16px;right:16px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:2">
-        <button class="back-pill" onclick="goTab('recipes')" style="background:rgba(255,255,255,0.18);color:#fff;white-space:nowrap">
-          <svg viewBox="0 0 24 24" style="stroke:#fff"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Back
+      <div style="position:absolute;top:14px;right:14px;display:flex;flex-direction:row;align-items:center;gap:6px;z-index:2">
+        <button onclick="goTab('recipes')" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.18);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <button class="detail-fav-btn" id="d-fav-btn" onclick="toggleFav()">♡</button>
         <button class="detail-share-btn" id="d-share-btn" onclick="shareRecipe()">
-          <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         </button>
       </div>
       <div class="detail-category" id="d-category"></div>
