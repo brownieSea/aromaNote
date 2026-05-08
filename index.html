@@ -1466,9 +1466,8 @@ function renderRecentRecipes() {
 
   // recipe_id가 USR로 시작하면 사용자 등록, 숫자 ID는 원본 데이터
   // 전체 레시피에서 마지막 3개 (시트 기준 최근 등록순)
-  const recent = [...state.recipes]
-    .reverse()
-    .slice(0, 3);
+  // 맨 앞이 최근 등록순 (등록 시 unshift 방식)
+  const recent = state.recipes.slice(0, 3);
 
   area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px">
     ${recent.map(r => `
@@ -1952,21 +1951,23 @@ async function submitRecipe() {
   };
 
   if (!state.editRecipeId) {
-    state.recipes = [...state.recipes, tempRecipe];
+    state.recipes = [tempRecipe, ...state.recipes]; // 맨 앞에 추가 → 최근 등록 즉시 반영
   } else {
     state.recipes = state.recipes.map(r => r.id === state.editRecipeId ? { ...r, ...tempRecipe } : r);
   }
 
   toast(state.editRecipeId ? '레시피를 수정했어요' : '레시피를 등록했어요!');
-  renderRecipePage();
-  renderMyPage();
+  renderAll();
   goBack();
 
   // 백그라운드에서 실제 저장
   api({ action }, 'POST', body)
     .then(r => {
       if (!r.success) { toast('저장 중 오류: ' + (r.error||'')); return; }
-      // 캐시 무효화 후 전체 재로드
+      // 실제 ID로 교체 후 캐시 갱신
+      if (!state.editRecipeId && r.id) {
+        state.recipes = state.recipes.map(x => x.id === tempId ? { ...x, id: r.id } : x);
+      }
       localStorage.removeItem('an_cache');
       loadAllData();
     })
