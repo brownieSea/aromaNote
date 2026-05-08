@@ -1493,8 +1493,8 @@ function clearForm() {
   ['f-title','f-sub-category','f-base','f-how-to-make','f-how-to-use','f-apply-area','f-tags','f-caution','f-notes'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  document.getElementById('oil-fields').innerHTML =
-    '<div class="oil-field-row">' + makeOilFieldRow(1) + '</div>';
+  // 초기 행 없이 시작 — 추가 버튼 클릭 시에만 생성
+  document.getElementById('oil-fields').innerHTML = '';
 }
 
 function populateFormSelects() {
@@ -1507,10 +1507,11 @@ function populateFormSelects() {
 function addOilRow() {
   const rows = document.querySelectorAll('#oil-fields .oil-field-row');
   if (rows.length >= 10) return toast('오일은 최대 10개까지 추가할 수 있어요');
-  const n = rows.length + 1;
+  const n = Date.now(); // 고유 번호
   const div = document.createElement('div');
   div.className = 'oil-field-row';
   div.innerHTML = makeOilFieldRow(n);
+  // 버튼 바로 아래, 기존 행들 위에 삽입
   const container = document.getElementById('oil-fields');
   container.insertBefore(div, container.firstChild);
   div.querySelector('[data-oil]').focus();
