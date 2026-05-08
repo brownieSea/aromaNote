@@ -789,7 +789,9 @@ body { font-family: var(--sans); color: var(--text-1); }
         </div>
         <div>
           <label class="form-label">세부 카테고리</label>
-          <input class="form-input" id="f-sub-category" placeholder="예: 호흡기케어">
+          <select class="form-select" id="f-sub-category">
+            <option value="">선택</option>
+          </select>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1598,6 +1600,10 @@ function clearForm() {
 function populateFormSelects() {
   const cats = (state.categories.category || []).map(c => `<option value="${c.value}">${c.value}</option>`).join('');
   document.getElementById('f-category').innerHTML = '<option value="">선택</option>' + cats;
+
+  const subs = (state.categories.sub_category || []).map(c => `<option value="${c.value}">${c.value}</option>`).join('');
+  document.getElementById('f-sub-category').innerHTML = '<option value="">선택</option>' + subs;
+
   const methods = (state.categories.method || []).map(c => `<option value="${c.value}">${c.value}</option>`).join('');
   document.getElementById('f-method').innerHTML = '<option value="">선택</option>' + methods;
 }
