@@ -1464,7 +1464,7 @@ function renderRecentRecipes() {
       <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
         <div class="rm-method">${r.method||'혼합'}</div>
         <div class="rm-title">${r.title}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${(r.oils_list||'').split(',').filter(Boolean).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
       </div>`).join('')}
   </div>`;
 }
