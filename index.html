@@ -2365,46 +2365,31 @@ function goTab(tab) {
   document.getElementById('nav-' + tab).classList.add('active');
   if (tab === 'mypage') renderMyPage();
   if (tab === 'recipes') {
-    // 탭 진입 시 검색창 초기화
+    // 탭 진입 시 검색창 + 필터 초기화
     const searchEl = document.getElementById('recipe-search');
     if (searchEl) searchEl.value = '';
     _activeCategoryFilter = '전체';
 
     if (state.myRecipeMode) {
+      // 마이페이지에서 나의 레시피 클릭
       state.recipeMode = 'mine';
-      document.getElementById('filter-all-btn').classList.remove('on');
-      document.getElementById('filter-my-btn').classList.remove('on');
-      document.getElementById('filter-mine-btn').classList.add('on');
       state.myRecipeMode = false;
-      renderRecipeList('', '전체');
-      return;
+    } else if (!['all','my','mine','fav'].includes(state.recipeMode)) {
+      state.recipeMode = 'all';
     }
-    if (false && state.myRecipeMode) {
-      // 내 레시피 모드 (legacy)
-      const myUid = state.user?.uid || '';
-      const myList = [...state.recipes]
-        .sort((a,b) => a.title.localeCompare(b.title,'ko'))
-        .filter(r => (r.source||'').trim() === myUid.trim());
-      const countEl = document.getElementById('recipe-count-label');
-      if (countEl) countEl.textContent = myList.length + '개';
-      const el = document.getElementById('recipe-list');
-      if (!myList.length) {
-        el.innerHTML = `<div class="empty-box" style="margin:0 18px"><p>아직 등록한 레시피가 없어요.</p></div>`;
-      } else {
-        el.innerHTML = myList.map(r => `
-          <div class="rl-item" onclick="openRecipeDetail('${r.id}')">
-            <div class="rl-top">
-              <div class="rl-title">${r.title}</div>
-              <span class="badge badge-blue">${r.method||''}</span>
-            </div>
-            <div class="rl-meta"><span>${r.category||''}</span><span>${r.difficulty||''}</span></div>
-            ${r.oils_list ? `<div class="oil-tags">${r.oils_list.split(',').slice(0,4).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>` : ''}
-          </div>`).join('');
-      }
-      state.myRecipeMode = false; // 플래그 초기화
-    } else {
-      renderRecipePage();
-    }
+
+    // 모든 필터 버튼 상태 동기화
+    ['all','my','mine','fav'].forEach(m => {
+      const btn = document.getElementById('filter-' + (m==='all'?'all':m==='my'?'my':m==='mine'?'mine':'fav') + '-btn');
+      if (btn) btn.classList.toggle('on', state.recipeMode === m);
+    });
+
+    // 카테고리 칩 초기화
+    document.querySelectorAll('#category-chips .chip').forEach((c,i) => c.classList.toggle('on', i===0));
+
+    renderRecipeList('', '전체');
+    return;
+
   }
 }
 
