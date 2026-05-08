@@ -1216,7 +1216,7 @@ async function loadOilImages() {
 }
 
 async function loadRecipes(params={}) {
-  const r = await api({ action:'getRecipes', limit:200, ...params });
+  const r = await api({ action:'getRecipes', limit:9999, ...params });
   if (r.success) state.recipes = r.data;
 }
 
@@ -1475,6 +1475,10 @@ async function toggleFav() {
 
   // API 백그라운드
   api({ action:'toggleFavorite' }, 'POST', { uid: state.user.uid, recipe_id: id })
+    .then(() => {
+      // 유저 데이터만 재로드 (빠름)
+      loadUserData();
+    })
     .catch(() => toast('저장 중 오류가 발생했어요'));
 }
 
@@ -1637,7 +1641,7 @@ async function submitRecipe() {
     caution      : document.getElementById('f-caution').value.trim(),
     notes        : document.getElementById('f-notes').value.trim(),
     uid          : state.user?.uid,
-    source       : state.user?.uid || '본인',
+    source       : state.user?.uid || '',
   };
 
   document.querySelectorAll('#oil-fields .oil-field-row').forEach((row, i) => {
@@ -1675,22 +1679,14 @@ async function submitRecipe() {
   goBack();
 
   // 백그라운드에서 실제 저장
-  document.getElementById('submit-btn').disabled = true;
   api({ action }, 'POST', body)
     .then(r => {
-      document.getElementById('submit-btn').disabled = false;
       if (!r.success) { toast('저장 중 오류: ' + (r.error||'')); return; }
-      // 실제 ID로 교체
-      if (!state.editRecipeId && r.id) {
-        state.recipes = state.recipes.map(x => x.id === tempId ? { ...x, id: r.id } : x);
-      }
-      // 캐시 갱신
+      // 캐시 무효화 후 전체 재로드
+      localStorage.removeItem('an_cache');
       loadAllData();
     })
-    .catch(() => {
-      document.getElementById('submit-btn').disabled = false;
-      toast('저장 중 오류가 발생했어요');
-    });
+    .catch(() => toast('저장 중 오류가 발생했어요'));
 }
 
 // ── OILS ─────────────────────────────────────────────────────
