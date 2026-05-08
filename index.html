@@ -1118,7 +1118,7 @@ async function loadSharedRecipe(recipeId) {
   try {
     const r = await api({ action: 'getInitialData' });
     if (r && r.success) {
-      state.recipes   = r.recipes   || [];
+      state.recipes   = (r.recipes || []).reverse();
       state.oils      = r.oils      || [];
       state.oilImages = r.oilImages || {};
     }
@@ -1217,7 +1217,7 @@ async function loadAllData() {
     if (r && r.success) {
       state.categories = r.categories || {};
       state.oils       = r.oils       || [];
-      state.recipes    = r.recipes    || [];
+      state.recipes    = (r.recipes || []).reverse();
       state.oilImages  = r.oilImages  || {};
       localStorage.setItem('an_cache', JSON.stringify({
         categories: state.categories,
@@ -1317,7 +1317,7 @@ async function loadOilImages() {
 
 async function loadRecipes(params={}) {
   const r = await api({ action:'getRecipes', limit:9999, ...params });
-  if (r.success) state.recipes = r.data;
+  if (r.success) state.recipes = (r.data || []).reverse();
 }
 
 async function loadUserData() {
