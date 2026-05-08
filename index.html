@@ -1078,39 +1078,66 @@ async function api(params, method='GET', body=null) {
 //  초기화
 // ============================================================
 async function init() {
-  // 1. 저장된 세션 확인
+  // 1. 공유 링크로 접속한 경우 — 로그인 없이 레시피만 표시
+  const params = new URLSearchParams(location.search);
+  const sharedRecipeId = params.get('recipe');
+  if (sharedRecipeId) {
+    await loadSharedRecipe(sharedRecipeId);
+    return;
+  }
+
+  // 2. 저장된 세션 확인
   const saved = localStorage.getItem('an_user');
   if (saved) {
     state.user = JSON.parse(saved);
     await afterLogin();
-    // URL 파라미터로 레시피 공유 링크 처리
-    checkSharedRecipe();
     return;
   }
 
-  // 2. 세션 없으면 로그인 화면
+  // 3. 세션 없으면 로그인 화면
   hideLoading();
   showLoginScreen();
 }
 
-function checkSharedRecipe() {
-  const params = new URLSearchParams(location.search);
-  const recipeId = params.get('recipe');
-  if (!recipeId) return;
-
-  // URL에서 파라미터 제거 (히스토리 클린)
+async function loadSharedRecipe(recipeId) {
+  // URL 파라미터 제거
   history.replaceState({}, '', location.pathname);
 
-  // 데이터 로드 후 해당 레시피 열기
-  const tryOpen = (attempts) => {
-    const r = state.recipes.find(x => x.id === recipeId);
-    if (r) {
-      openRecipeDetail(recipeId);
-    } else if (attempts < 10) {
-      setTimeout(() => tryOpen(attempts + 1), 500);
+  // 데이터 로드 (로그인 없이)
+  try {
+    const r = await api({ action: 'getInitialData' });
+    if (r && r.success) {
+      state.recipes   = r.recipes   || [];
+      state.oils      = r.oils      || [];
+      state.oilImages = r.oilImages || {};
     }
-  };
-  tryOpen(0);
+  } catch(e) {}
+
+  hideLoading();
+
+  const recipe = state.recipes.find(x => x.id === recipeId);
+  if (!recipe) {
+    toast('레시피를 찾을 수 없어요');
+    showLoginScreen();
+    return;
+  }
+
+  // 앱 셸 표시 (탭 숨기고 레시피만)
+  document.getElementById('app').style.display = 'flex';
+  // 하단 탭 숨기기
+  document.querySelector('.bottom-nav').style.display = 'none';
+  // 레시피 상세 열기
+  openRecipeDetail(recipeId);
+
+  // 하단에 로그인 유도 배너 표시
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:var(--accent);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;z-index:50;';
+  banner.innerHTML = '<span style="font-size:13px">로그인하면 모든 기능을 사용할 수 있어요</span><button onclick="location.reload()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:var(--sans)">로그인</button>';
+  document.body.appendChild(banner);
+}
+
+function checkSharedRecipe() {
+  // init()에서 처리됨
 }
 
 function renderAll() {
