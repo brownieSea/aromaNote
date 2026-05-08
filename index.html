@@ -1920,9 +1920,17 @@ function openOilDetail(oil) {
   }
   document.getElementById('od-name').textContent    = oil.name_ko;
   document.getElementById('od-en').textContent      = oil.name_en || '';
-  document.getElementById('od-keywords').innerHTML  = oil.keyword ? oil.keyword.split(',').map(k=>`<span class="ood-tag" style="background:rgba(74,111,165,0.12);color:var(--accent)">${k.trim()}</span>`).join('') : '';
+  // L열(keyword) — 상단 키워드 태그
+  document.getElementById('od-keywords').innerHTML = oil.keyword
+    ? oil.keyword.split(',').map(k => `<span class="ood-tag" style="background:rgba(74,111,165,0.12);color:var(--accent)">${k.trim()}</span>`).join('')
+    : '';
   document.getElementById('od-desc').innerHTML     = textToList(oil.description || oil.desc_short || '—');
-  document.getElementById('od-benefits').innerHTML  = textToList(oil.benefits_summary || oil.benefits || '—');
+  // Q열(benefits_summary) + N열(benefits) 순서로 표시
+  const benefitsHtml = [
+    oil.benefits_summary ? `<div style="margin-bottom:${oil.benefits ? '12px' : '0'}">${textToList(oil.benefits_summary)}</div>` : '',
+    oil.benefits ? textToList(oil.benefits) : '',
+  ].filter(Boolean).join('');
+  document.getElementById('od-benefits').innerHTML = benefitsHtml || '<span style="color:var(--text-3)">—</span>';
   document.getElementById('od-cautions').innerHTML  = textToList(oil.cautions || '특별한 주의사항이 없어요.');
 
   // 관련 레시피 — 전체 표시
