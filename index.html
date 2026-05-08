@@ -2113,7 +2113,7 @@ async function toggleMyOilQuick(name, btn) {
   renderRecommend();
 
   // API 저장 후 확정
-  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: updated })
+  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: updated.join(',') })
     .then(r => {
       if (r && r.success) {
         state.user.my_oils = updated;
@@ -2159,7 +2159,7 @@ async function toggleMyOilFromDetail() {
   renderRecommend();
 
   // API는 백그라운드
-  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: updated })
+  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: updated.join(',') })
     .catch(() => toast('저장 중 오류가 발생했어요'));
 }
 
@@ -2191,7 +2191,7 @@ async function saveMyOils() {
   renderOilGrid(document.getElementById('oil-search').value, _activeTypeFilter);
 
   // API 저장 후 서버 데이터로 확정
-  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: checked })
+  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: checked.join(',') })
     .then(r => {
       if (r && r.success) {
         // 서버 저장 완료 — localStorage에 확정 반영
