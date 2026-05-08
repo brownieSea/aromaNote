@@ -697,7 +697,6 @@ body { font-family: var(--sans); color: var(--text-1); }
     <!-- 최근 등록 레시피 -->
     <div class="section-hd">
       <h2>최근 등록 레시피</h2>
-      <a onclick="goTab('recipes')">전체보기 →</a>
     </div>
     <div id="recent-recipes-area"></div>
 
@@ -1722,6 +1721,34 @@ async function submitRecipe() {
   const title = document.getElementById('f-title').value.trim();
   if (!title) return toast('제목을 입력해주세요');
 
+  // ── 중복 레시피 체크 (오일 구성 + 방울수 모두 일치) ──
+  if (!state.editRecipeId) {
+    const newOils = [];
+    document.querySelectorAll('#oil-fields .oil-field-row').forEach(row => {
+      const oil   = (row.querySelector('[data-oil]')?.value || '').trim();
+      const drops = (row.querySelector('[data-drops]')?.value || '').trim();
+      if (oil) newOils.push(oil + '|' + drops);
+    });
+    newOils.sort();
+
+    const duplicate = state.recipes.find(r => {
+      if (!r.oils || !r.oils.length) return false;
+      const rOils = r.oils.map(o => o.oil + '|' + o.drops).sort();
+      if (rOils.length !== newOils.length) return false;
+      return rOils.every((o, i) => o === newOils[i]);
+    });
+
+    if (duplicate) {
+      // 중복 토스트 — 클릭 시 해당 레시피로 이동
+      const el = document.getElementById('toast');
+      el.innerHTML = `동일한 레시피가 존재합니다 &nbsp;<span style="text-decoration:underline;cursor:pointer;font-weight:500" onclick="openRecipeDetail('${duplicate.id}');this.closest('#toast').classList.remove('show')">${duplicate.title}</span>`;
+      el.classList.add('show');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+      return;
+    }
+  }
+
   const body = {
     title        : title,
     category     : document.getElementById('f-category').value,
@@ -2171,6 +2198,7 @@ function focusSearch() {
 let _toastTimer;
 function toast(msg) {
   const el = document.getElementById('toast');
+  el.innerHTML = '';
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(_toastTimer);
