@@ -1078,17 +1078,39 @@ async function api(params, method='GET', body=null) {
 //  초기화
 // ============================================================
 async function init() {
-  // 1. 저장된 세션 확인 (캐시 삭제 전까지 자동 로그인)
+  // 1. 저장된 세션 확인
   const saved = localStorage.getItem('an_user');
   if (saved) {
     state.user = JSON.parse(saved);
     await afterLogin();
+    // URL 파라미터로 레시피 공유 링크 처리
+    checkSharedRecipe();
     return;
   }
 
-  // 2. 세션 없으면 바로 로그인 화면
+  // 2. 세션 없으면 로그인 화면
   hideLoading();
   showLoginScreen();
+}
+
+function checkSharedRecipe() {
+  const params = new URLSearchParams(location.search);
+  const recipeId = params.get('recipe');
+  if (!recipeId) return;
+
+  // URL에서 파라미터 제거 (히스토리 클린)
+  history.replaceState({}, '', location.pathname);
+
+  // 데이터 로드 후 해당 레시피 열기
+  const tryOpen = (attempts) => {
+    const r = state.recipes.find(x => x.id === recipeId);
+    if (r) {
+      openRecipeDetail(recipeId);
+    } else if (attempts < 10) {
+      setTimeout(() => tryOpen(attempts + 1), 500);
+    }
+  };
+  tryOpen(0);
 }
 
 function renderAll() {
@@ -1218,6 +1240,7 @@ async function doLogin() {
   document.getElementById('loading').classList.remove('hidden');
 
   await afterLogin();
+  checkSharedRecipe();
 }
 
 function doLogout() {
@@ -1572,54 +1595,38 @@ async function shareRecipe() {
   const r  = state.recipes.find(x => x.id === id);
   if (!r) return;
 
-  const oilsText = r.oils.map(o => o.oil + ' ' + o.drops).join(', ');
-  const lines = [
-    '🌿 ' + r.title,
-    '',
-    '📌 카테고리: ' + [r.category, r.sub_category].filter(Boolean).join(' > '),
-    '🔧 방법: ' + (r.method || '') + '  난이도: ' + (r.difficulty || ''),
-    '',
-    '🧴 재료',
-    oilsText,
-    r.base_materials ? '기타: ' + r.base_materials : '',
-    '',
-    r.how_to_make ? '📝 만드는 법' : '',
-    r.how_to_make ? r.how_to_make : '',
-    r.how_to_use  ? '💡 사용 방법' : '',
-    r.how_to_use  ? r.how_to_use  : '',
-    r.caution     ? '⚠️ 주의사항: ' + r.caution : '',
-    '',
-    '— Aroma Note',
-  ];
-  const text = lines.filter(s => s !== null && s !== undefined).join('\n').trim();
+  const shareUrl = location.origin + location.pathname + '?recipe=' + encodeURIComponent(id);
+  const shareTitle = '🌿 ' + r.title;
+  const shareText = [
+    r.category ? '📌 ' + [r.category, r.sub_category].filter(Boolean).join(' > ') : '',
+    r.method   ? '🔧 ' + r.method : '',
+  ].filter(Boolean).join('  ');
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: r.title, text: text });
+      await navigator.share({
+        title: shareTitle,
+        text : shareText,
+        url  : shareUrl,
+      });
+      return;
     } catch(e) {
-      if (e.name !== 'AbortError') fallbackShare(text);
+      if (e.name === 'AbortError') return;
     }
-  } else {
-    fallbackShare(text);
   }
-}
-
-function fallbackShare(text) {
-  // 클립보드 복사 fallback
+  // fallback — URL 클립보드 복사
+  const copyText = shareTitle + '\n' + shareUrl;
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text)
-      .then(() => toast('클립보드에 복사됐어요! 카톡에 붙여넣기 하세요 📋'))
-      .catch(() => toast('공유 기능이 지원되지 않는 환경이에요'));
+    await navigator.clipboard.writeText(copyText).catch(() => {});
   } else {
-    // 구형 브라우저
     const el = document.createElement('textarea');
-    el.value = text;
+    el.value = copyText;
     document.body.appendChild(el);
     el.select();
     document.execCommand('copy');
     document.body.removeChild(el);
-    toast('클립보드에 복사됐어요! 카톡에 붙여넣기 하세요 📋');
   }
+  toast('링크가 복사됐어요! 카톡에 붙여넣기 하세요 🔗');
 }
 
 async function toggleFav() {
