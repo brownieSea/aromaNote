@@ -1974,7 +1974,7 @@ function renderOilGrid(filter='', typeFilter='전체') {
       <div class="oc-name">${o.name_ko}</div>
       <div class="oc-name-en">${o.name_en||''}</div>
       <div class="oc-footer">
-        ${o.keyword ? `<span class="badge badge-amber">${o.keyword.split(',')[0]}</span>` : '<span></span>'}
+        <span></span>
         <button class="myoil-btn ${isMy?'remove':'add'}"
           onclick="event.stopPropagation(); toggleMyOilQuick('${o.name_ko}', this)"
           title="${isMy?'내 오일에서 제거':'내 오일에 추가'}"
