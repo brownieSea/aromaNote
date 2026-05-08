@@ -914,7 +914,11 @@ body { font-family: var(--sans); color: var(--text-1); }
         <div class="db-text" id="od-cautions"></div>
       </div>
       <div id="od-related-block" style="padding-top:4px">
-        <div class="db-label" style="padding:0 18px;margin-bottom:10px">관련 레시피</div>
+        <div id="od-related-header" style="display:flex;align-items:center;gap:8px;padding:0 18px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none">
+          <span class="db-label" style="white-space:nowrap;margin-bottom:0">관련 레시피</span>
+          <span id="od-related-count" style="font-size:10px;color:var(--text-3);white-space:nowrap;margin-right:4px"></span>
+          <div id="od-related-chips" style="display:flex;gap:6px;flex-shrink:0"></div>
+        </div>
         <div id="od-related-list"></div>
       </div>
     </div>
@@ -2034,8 +2038,7 @@ function openOilDetail(oil) {
     r.oils_list.toLowerCase().includes(oil.name_ko.toLowerCase())
   );
   // 관련 레시피 라벨에 카운트 업데이트
-  document.querySelector('#od-related-block .db-label').textContent =
-    '관련 레시피 : ' + related.length + '개';
+  // 카운트는 렌더 시 od-related-count에 표시
   if (!related.length) {
     document.getElementById('od-related-list').innerHTML = '<div style="font-size:13px;color:var(--text-3)">관련 레시피가 없어요.</div>';
   } else {
@@ -2058,8 +2061,10 @@ function openOilDetail(oil) {
         ${r.oils_list ? `<div class="oil-tags">${r.oils_list.split(',').slice(0,3).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>` : ''}
       </div>`).join('');
 
+    // 카운트 + 칩을 헤더 한 줄에
+    document.getElementById('od-related-count').textContent = related.length + '개';
+    document.getElementById('od-related-chips').innerHTML = chipHtml;
     document.getElementById('od-related-list').innerHTML =
-      `<div style="display:flex;gap:6px;overflow-x:auto;padding:0 18px 10px;scrollbar-width:none">${chipHtml}</div>` +
       `<div id="od-related-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 18px">${gridHtml(related)}</div>`;
 
     // 필터 함수 — 전역
