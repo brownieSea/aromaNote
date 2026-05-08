@@ -684,12 +684,14 @@ body { font-family: var(--sans); color: var(--text-1); }
       <div class="ood-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
     </div>
 
+    <!-- 오늘의 오일 관련 레시피 -->
+    <div id="ood-recipes-area"></div>
+
     <!-- 내 오일 추천 -->
     <div class="section-hd">
       <h2>내 오일로 만들 수 있어요</h2>
-      <a onclick="goMyOilRecipes()">전체보기 →</a>
+      <a onclick="goMyOilRecipes()" style="background:var(--accent-l);color:var(--accent);padding:6px 14px;border-radius:20px;font-weight:500">레시피 보기 →</a>
     </div>
-    <div id="recommend-area"></div>
 
     <!-- 즐겨찾기 -->
     <div class="section-hd">
@@ -1277,46 +1279,53 @@ function renderHome() {
     else goTab('oils');
   };
 
-  // 내 오일 추천
-  renderRecommend();
+  // 오늘의 오일 관련 레시피
+  renderOodRecipes(oil.ko);
 
   // 즐겨찾기
   renderHomeFav();
 }
 
 function renderRecommend() {
-  const area = document.getElementById('recommend-area');
-  const myOils = state.user?.my_oils || [];
+  // 버튼만 남기고 카드 제거 — 버튼은 HTML에 고정
+}
 
-  if (!myOils.length) {
-    area.innerHTML = `<div class="empty-box"><p>아직 내 오일이 없어요.<br>오일을 등록하면 딱 맞는 레시피를 추천해드려요!</p><button class="setup-btn" onclick="goTab('mypage')">오일 등록하러 가기 →</button></div>`;
+function renderOodRecipes(oilName) {
+  const area = document.getElementById('ood-recipes-area');
+  if (!area) return;
+  if (!oilName || !state.recipes.length) {
+    area.innerHTML = '';
     return;
   }
 
-  // 내 오일로 만들 수 있는 레시피 필터
-  const myOilsLower = myOils.map(o => o.toLowerCase());
-  const allMatched = state.recipes.filter(r => {
-    if (!r.oils_list) return false;
-    const rOils = r.oils_list.split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
-    return rOils.length > 0 && rOils.every(o => myOilsLower.includes(o));
-  });
+  // 오늘의 오일이 포함된 레시피 필터
+  const matched = state.recipes.filter(r =>
+    r.oils_list && r.oils_list.split(',').map(o => o.trim()).includes(oilName)
+  );
 
-  if (!allMatched.length) {
-    area.innerHTML = `<div class="empty-box"><p>현재 오일로 만들 수 있는 레시피를 찾는 중이에요.</p></div>`;
+  if (!matched.length) {
+    area.innerHTML = '';
     return;
   }
 
-  // 랜덤 3개 뽑기
-  const shuffled = [...allMatched].sort(() => Math.random() - 0.5);
-  const matched = shuffled.slice(0, 3);
+  // 매번 랜덤하게 6개 뽑기
+  const shuffled = [...matched].sort(() => Math.random() - 0.5);
+  const picked = shuffled.slice(0, 6);
 
-  area.innerHTML = `<div class="hscroll">${matched.map(r => `
-    <div class="recipe-mini" onclick="openRecipeDetail('${r.id}')">
-      <div class="rm-method">${r.method||'혼합'}</div>
-      <div class="rm-title">${r.title}</div>
-      <div class="rm-oils">${r.oils_list.replace(/,/g,' · ')}</div>
-      <div class="rm-diff">${r.difficulty||'쉬움'}</div>
-    </div>`).join('')}</div>`;
+  area.innerHTML = `
+    <div class="section-hd" style="padding-top:14px">
+      <h2>${oilName} 활용 레시피</h2>
+      <a onclick="goTab('recipes')" style="font-size:12px;color:var(--accent)">전체보기 →</a>
+    </div>
+    <div class="hscroll">
+      ${picked.map(r => `
+        <div class="recipe-mini" onclick="openRecipeDetail('${r.id}')">
+          <div class="rm-method">${r.method||'혼합'}</div>
+          <div class="rm-title">${r.title}</div>
+          <div class="rm-oils">${(r.oils_list||'').replace(/,/g,' · ')}</div>
+          <div class="rm-diff">${r.difficulty||'쉬움'}</div>
+        </div>`).join('')}
+    </div>`;
 }
 
 function renderHomeFav() {
