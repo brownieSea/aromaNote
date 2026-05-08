@@ -171,6 +171,7 @@ body { font-family: var(--sans); color: var(--text-1); }
   white-space: nowrap; z-index: 999;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.show.clickable { pointer-events: all; cursor: pointer; }
 
 /* ── Loading ── */
 #loading {
@@ -1745,12 +1746,19 @@ async function submitRecipe() {
     });
 
     if (duplicate) {
-      // 중복 토스트 — 클릭 시 해당 레시피로 이동
       const el = document.getElementById('toast');
-      el.innerHTML = `동일한 레시피가 존재합니다 &nbsp;<span style="text-decoration:underline;cursor:pointer;font-weight:500" onclick="openRecipeDetail('${duplicate.id}');this.closest('#toast').classList.remove('show')">${duplicate.title}</span>`;
-      el.classList.add('show');
+      el.innerHTML = `동일한 레시피가 존재합니다 &nbsp;<u style="font-weight:500">${duplicate.title}</u>`;
+      el.classList.add('show', 'clickable');
+      el.onclick = () => {
+        openRecipeDetail(duplicate.id);
+        el.classList.remove('show', 'clickable');
+        el.onclick = null;
+      };
       clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+      _toastTimer = setTimeout(() => {
+        el.classList.remove('show', 'clickable');
+        el.onclick = null;
+      }, 10000);
       return;
     }
   }
@@ -2206,9 +2214,11 @@ function toast(msg) {
   const el = document.getElementById('toast');
   el.innerHTML = '';
   el.textContent = msg;
+  el.onclick = null;
+  el.classList.remove('clickable');
   el.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  _toastTimer = setTimeout(() => el.classList.remove('show', 'clickable'), 2200);
 }
 
 
