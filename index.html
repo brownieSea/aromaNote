@@ -357,13 +357,20 @@ body { font-family: var(--sans); color: var(--text-1); }
 .detail-tags    { display: flex; gap: 6px; flex-wrap: wrap; }
 .detail-tag     { font-size: 10px; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.12); padding: 2px 10px; border-radius: 20px; }
 .detail-fav-btn {
-  position: absolute; top: 18px; right: 18px;
   width: 34px; height: 34px; border-radius: 50%;
   background: rgba(255,255,255,0.15); border: none;
   display: flex; align-items: center; justify-content: center;
   font-size: 16px; cursor: pointer; transition: background 0.15s;
 }
 .detail-fav-btn:hover { background: rgba(255,255,255,0.25); }
+.detail-share-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.detail-share-btn:hover { background: rgba(255,255,255,0.25); }
+.detail-share-btn svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .detail-body  { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
 .detail-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px 16px; }
@@ -742,7 +749,10 @@ body { font-family: var(--sans); color: var(--text-1); }
         <button class="back-pill" onclick="goTab('recipes')" style="background:rgba(255,255,255,0.18);color:#fff;white-space:nowrap">
           <svg viewBox="0 0 24 24" style="stroke:#fff"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Back
         </button>
-        <button class="detail-fav-btn" id="d-fav-btn" onclick="toggleFav()" style="position:static;margin:0">♡</button>
+        <button class="detail-fav-btn" id="d-fav-btn" onclick="toggleFav()">♡</button>
+        <button class="detail-share-btn" id="d-share-btn" onclick="shareRecipe()">
+          <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
       </div>
       <div class="detail-category" id="d-category"></div>
       <div class="detail-title"    id="d-title"></div>
@@ -1556,6 +1566,61 @@ function openRecipeDetail(id) {
   }
 
   showPage('page-recipe-detail');
+}
+
+async function shareRecipe() {
+  const id = document.getElementById('d-fav-btn').dataset.id;
+  const r  = state.recipes.find(x => x.id === id);
+  if (!r) return;
+
+  const oilsText = r.oils.map(o => o.oil + ' ' + o.drops).join(', ');
+  const lines = [
+    '🌿 ' + r.title,
+    '',
+    '📌 카테고리: ' + [r.category, r.sub_category].filter(Boolean).join(' > '),
+    '🔧 방법: ' + (r.method || '') + '  난이도: ' + (r.difficulty || ''),
+    '',
+    '🧴 재료',
+    oilsText,
+    r.base_materials ? '기타: ' + r.base_materials : '',
+    '',
+    r.how_to_make ? '📝 만드는 법' : '',
+    r.how_to_make ? r.how_to_make : '',
+    r.how_to_use  ? '💡 사용 방법' : '',
+    r.how_to_use  ? r.how_to_use  : '',
+    r.caution     ? '⚠️ 주의사항: ' + r.caution : '',
+    '',
+    '— Aroma Note',
+  ];
+  const text = lines.filter(s => s !== null && s !== undefined).join('\n').trim();
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: r.title, text: text });
+    } catch(e) {
+      if (e.name !== 'AbortError') fallbackShare(text);
+    }
+  } else {
+    fallbackShare(text);
+  }
+}
+
+function fallbackShare(text) {
+  // 클립보드 복사 fallback
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+      .then(() => toast('클립보드에 복사됐어요! 카톡에 붙여넣기 하세요 📋'))
+      .catch(() => toast('공유 기능이 지원되지 않는 환경이에요'));
+  } else {
+    // 구형 브라우저
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    toast('클립보드에 복사됐어요! 카톡에 붙여넣기 하세요 📋');
+  }
 }
 
 async function toggleFav() {
