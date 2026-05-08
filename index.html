@@ -797,14 +797,16 @@ body { font-family: var(--sans); color: var(--text-1); }
       </div>
       <div>
         <label class="form-label">오일 구성</label>
+        <button class="add-oil-btn" onclick="addOilRow()" style="margin-bottom:8px">+ 오일 추가</button>
         <div class="oil-fields" id="oil-fields">
           <div class="oil-field-row">
-            <input class="form-input" placeholder="오일명" data-oil="1">
+            <input class="form-input" placeholder="오일명" data-oil="1"
+              oninput="showOilAC(this)" onblur="hideOilAC(this)"
+              onkeydown="handleOilACKey(event,this)" autocomplete="off">
             <input class="form-input" placeholder="양 (방울)" data-drops="1">
             <button class="remove-oil-btn" onclick="removeOilRow(this)">×</button>
           </div>
         </div>
-        <button class="add-oil-btn" onclick="addOilRow()">+ 오일 추가</button>
       </div>
       <div>
         <label class="form-label">베이스/기타 재료</label>
@@ -990,7 +992,7 @@ body { font-family: var(--sans); color: var(--text-1); }
 // ============================================================
 //  API 설정 — GAS 웹앱 URL
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyau6OmqWOPHKA8g0ftF8fjF5YsWsQY_F7cZe5YF2XfT7ayimAeYDd1V-iFbTzK7sl-/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxqPHtc7cpGUZ8WLwKhr2TKIyscFCR0d7vZ7nVrU-r7jLYrVuuX-F6rv4cLpYhmcLLK/exec';
 
 // ============================================================
 //  오늘의 오일 데이터 (로컬)
@@ -1021,29 +1023,22 @@ let state = {
   editRecipeId: null,
   oilImages   : {},
   recipeMode  : 'all',  // 'all' | 'my'
+  myRecipeMode: false,  // 내 레시피만 보기
 };
 
 // ============================================================
-//  API — fetch 방식 (GAS 웹앱 직접 호출)
+//  API — GET 방식으로 통일 (GAS CORS 호환)
+//  데이터가 많으면 data 파라미터에 JSON으로 인코딩
 // ============================================================
 async function api(params, method='GET', body=null) {
   const merged = method === 'POST' ? { ...body, ...params } : params;
   try {
-    if (method === 'GET') {
-      const qs = new URLSearchParams(merged).toString();
-      const res = await fetch(GAS_URL + '?' + qs, {
-        redirect: 'follow',
-      });
-      return await res.json();
-    } else {
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(merged),
-      });
-      return await res.json();
-    }
+    // action만 URL에, 나머지는 data 파라미터로 JSON 인코딩
+    const { action, ...rest } = merged;
+    const dataStr = encodeURIComponent(JSON.stringify(rest));
+    const url = GAS_URL + '?action=' + action + '&data=' + dataStr;
+    const res = await fetch(url, { redirect: 'follow' });
+    return await res.json();
   } catch(e) {
     console.error('API 오류:', e);
     return { success: false, error: e.message };
@@ -1516,20 +1511,23 @@ function addOilRow() {
   const div = document.createElement('div');
   div.className = 'oil-field-row';
   div.innerHTML = makeOilFieldRow(n);
-  document.getElementById('oil-fields').appendChild(div);
+  const container = document.getElementById('oil-fields');
+  container.insertBefore(div, container.firstChild);
+  div.querySelector('[data-oil]').focus();
 }
 
 function makeOilFieldRow(n) {
   return `
     <input class="form-input" placeholder="오일명" data-oil="${n}"
-      oninput="showOilAC(this)" onblur="hideOilAC(this)" autocomplete="off">
+      oninput="showOilAC(this)" onblur="hideOilAC(this)"
+      onkeydown="handleOilACKey(event,this)" autocomplete="off">
     <input class="form-input" placeholder="양 (방울)" data-drops="${n}">
     <button class="remove-oil-btn" onclick="removeOilRow(this)">×</button>`;
 }
 
 // ── 오일 자동완성 ──────────────────────────────────────────
 function showOilAC(input) {
-  hideOilAC(input); // 기존 드롭다운 제거
+  hideOilAC(input);
   const q = input.value.trim();
   if (!q) return;
   const matches = state.oils
@@ -1541,22 +1539,28 @@ function showOilAC(input) {
   const row = input.closest('.oil-field-row');
   const ac = document.createElement('div');
   ac.className = 'oil-autocomplete';
-  ac.dataset.acFor = 'oil';
-  matches.forEach(name => {
+
+  matches.forEach((name, i) => {
     const item = document.createElement('div');
     item.className = 'oil-ac-item';
     item.textContent = name;
+    item.dataset.idx = i;
     item.onmousedown = (e) => {
       e.preventDefault();
-      input.value = name;
-      ac.remove();
-      // 다음 입력칸(방울)으로 포커스
-      const dropsInput = row.querySelector('[data-drops]');
-      if (dropsInput) dropsInput.focus();
+      selectOilAC(input, name);
     };
     ac.appendChild(item);
   });
   row.appendChild(ac);
+}
+
+function selectOilAC(input, name) {
+  input.value = name;
+  hideOilAC(input);
+  // 방울 입력칸으로 포커스
+  const row = input.closest('.oil-field-row');
+  const dropsInput = row ? row.querySelector('[data-drops]') : null;
+  if (dropsInput) dropsInput.focus();
 }
 
 function hideOilAC(input) {
@@ -1564,6 +1568,48 @@ function hideOilAC(input) {
   if (!row) return;
   const ac = row.querySelector('.oil-autocomplete');
   if (ac) ac.remove();
+}
+
+function handleOilACKey(e, input) {
+  const row = input.closest('.oil-field-row');
+  if (!row) return;
+  const ac = row.querySelector('.oil-autocomplete');
+
+  if (e.key === 'Escape') {
+    hideOilAC(input);
+    return;
+  }
+
+  if (!ac) return;
+  const items = ac.querySelectorAll('.oil-ac-item');
+  if (!items.length) return;
+
+  // 현재 선택된 인덱스
+  let cur = -1;
+  items.forEach((item, i) => { if (item.classList.contains('selected')) cur = i; });
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = Math.min(cur + 1, items.length - 1);
+    items.forEach(item => item.classList.remove('selected'));
+    items[next].classList.add('selected');
+    items[next].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = Math.max(cur - 1, 0);
+    items.forEach(item => item.classList.remove('selected'));
+    items[prev].classList.add('selected');
+    items[prev].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (cur >= 0) {
+      selectOilAC(input, items[cur].textContent);
+    } else if (items.length === 1) {
+      selectOilAC(input, items[0].textContent);
+    }
+  }
 }
 
 function removeOilRow(btn) {
@@ -1912,31 +1958,9 @@ function showFavList() {
 }
 
 function showMyRecipes() {
+  // 내 레시피 모드 플래그 설정 후 탭 이동
+  state.myRecipeMode = true;
   goTab('recipes');
-  // 내 UID로 등록한 레시피만 필터
-  setTimeout(() => {
-    const myUid = state.user?.uid || '';
-    const myList = state.recipes.filter(r => (r.source||'').trim() === myUid.trim());
-    const countEl = document.getElementById('recipe-count-label');
-    if (countEl) countEl.textContent = myList.length + '개';
-    const el = document.getElementById('recipe-list');
-    if (!myList.length) {
-      el.innerHTML = `<div class="empty-box" style="margin:0 18px"><p>아직 등록한 레시피가 없어요.</p></div>`;
-      return;
-    }
-    el.innerHTML = myList.map(r => `
-      <div class="rl-item" onclick="openRecipeDetail('${r.id}')">
-        <div class="rl-top">
-          <div class="rl-title">${r.title}</div>
-          <span class="badge badge-blue">${r.method||''}</span>
-        </div>
-        <div class="rl-meta">
-          <span>${r.category||''}</span>
-          <span>${r.difficulty||''}</span>
-        </div>
-        ${r.oils_list ? `<div class="oil-tags">${r.oils_list.split(',').slice(0,4).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>` : ''}
-      </div>`).join('');
-  }, 50);
 }
 
 // ── 닉네임 변경 ──────────────────────────────────────────────
@@ -1973,6 +1997,34 @@ function goTab(tab) {
   document.getElementById(TAB_PAGES[tab]).classList.add('active');
   document.getElementById('nav-' + tab).classList.add('active');
   if (tab === 'mypage') renderMyPage();
+  if (tab === 'recipes') {
+    if (state.myRecipeMode) {
+      // 내 레시피 모드
+      const myUid = state.user?.uid || '';
+      const myList = [...state.recipes]
+        .sort((a,b) => a.title.localeCompare(b.title,'ko'))
+        .filter(r => (r.source||'').trim() === myUid.trim());
+      const countEl = document.getElementById('recipe-count-label');
+      if (countEl) countEl.textContent = myList.length + '개';
+      const el = document.getElementById('recipe-list');
+      if (!myList.length) {
+        el.innerHTML = `<div class="empty-box" style="margin:0 18px"><p>아직 등록한 레시피가 없어요.</p></div>`;
+      } else {
+        el.innerHTML = myList.map(r => `
+          <div class="rl-item" onclick="openRecipeDetail('${r.id}')">
+            <div class="rl-top">
+              <div class="rl-title">${r.title}</div>
+              <span class="badge badge-blue">${r.method||''}</span>
+            </div>
+            <div class="rl-meta"><span>${r.category||''}</span><span>${r.difficulty||''}</span></div>
+            ${r.oils_list ? `<div class="oil-tags">${r.oils_list.split(',').slice(0,4).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>` : ''}
+          </div>`).join('');
+      }
+      state.myRecipeMode = false; // 플래그 초기화
+    } else {
+      renderRecipePage();
+    }
+  }
 }
 
 function showPage(pageId) {
