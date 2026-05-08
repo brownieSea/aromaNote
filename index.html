@@ -1314,8 +1314,8 @@ function renderRecommend() {
 
   // 랜덤 3개
   const picked = [...allMatched].sort(() => Math.random() - 0.5).slice(0, 3);
-  area.innerHTML = `<div class="hscroll">${picked.map(r => `
-    <div class="recipe-mini" onclick="openRecipeDetail('${r.id}')">
+  area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px 18px;box-sizing:border-box">${picked.map(r => `
+    <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
       <div class="rm-method">${r.method||'혼합'}</div>
       <div class="rm-title">${r.title}</div>
       <div class="rm-oils">${(r.oils_list||'').replace(/,/g,' · ')}</div>
