@@ -1399,12 +1399,11 @@ function renderRecommend() {
 
   // 랜덤 3개
   const picked = [...allMatched].sort(() => Math.random() - 0.5).slice(0, 3);
-  area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px 18px;box-sizing:border-box">${picked.map(r => `
+  area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">${picked.map(r => `
     <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
       <div class="rm-method">${r.method||'혼합'}</div>
       <div class="rm-title">${r.title}</div>
-      <div class="rm-oils">${(r.oils_list||'').replace(/,/g,' · ')}</div>
-      <div class="rm-diff">${r.difficulty||'쉬움'}</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
     </div>`).join('')}</div>`;
 }
 
@@ -1445,7 +1444,7 @@ function renderOodRecipes(oilName) {
         <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
           <div class="rm-method">${r.method||'혼합'}</div>
           <div class="rm-title">${r.title}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${(r.oils_list||'').split(',').filter(Boolean).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
         </div>`).join('')}
     </div>`;
 }
