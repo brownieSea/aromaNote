@@ -678,9 +678,11 @@ body { font-family: var(--sans); color: var(--text-1); }
     <!-- 오늘의 오일 -->
     <div class="ood-card" id="ood-card">
       <div class="ood-eyebrow">오늘의 오일</div>
-      <div class="ood-name-ko" id="ood-ko">라벤더</div>
-      <div class="ood-name-en" id="ood-en">—</div>
-      <div class="ood-desc"    id="ood-desc">—</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+        <div class="ood-name-ko" id="ood-ko" style="margin-bottom:0">라벤더</div>
+        <div class="ood-name-en" id="ood-en" style="margin-bottom:0">—</div>
+      </div>
+      <div class="ood-desc" id="ood-desc">—</div>
       <div class="ood-tags"    id="ood-tags"></div>
       <div class="ood-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
     </div>
@@ -1014,16 +1016,16 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxqPHtc7cpGUZ8WLwKhr2TK
 //  오늘의 오일 데이터 (로컬)
 // ============================================================
 const OIL_OF_DAY = [
-  { ko:'라벤더',     en:'Lavender · Lavandula angustifolia',  desc:'긴장 완화와 수면 개선에 탁월해요. 확산기에 3~4방울, 취침 전 목덜미에 희석 도포하면 좋아요.',          tags:['긴장완화','수면','스트레스'] },
-  { ko:'페퍼민트',   en:'Peppermint · Mentha piperita',       desc:'두통 완화와 집중력 향상에 도움을 줘요. 관자놀이에 소량 도포하거나 손에 비빈 후 흡입해보세요.',       tags:['두통','집중력','소화'] },
-  { ko:'레몬',       en:'Lemon · Citrus limon',               desc:'기분 전환과 공기 정화에 좋아요. 물 한 잔에 한 방울 넣어 마시면 해독 효과를 기대할 수 있어요.',        tags:['정화','기분전환','면역'] },
-  { ko:'프랑킨센스', en:'Frankincense · Boswellia sacra',     desc:'명상과 집중, 피부 재생에 활용돼요. 모든 오일의 왕으로 불리며 다른 오일의 효과를 높여줘요.',           tags:['명상','피부재생','면역'] },
-  { ko:'유칼립투스', en:'Eucalyptus · Eucalyptus radiata',    desc:'호흡기 건강에 특히 좋아요. 코막힘이나 기침 시 흡입하거나 가슴에 희석 도포해보세요.',                 tags:['호흡기','코막힘','항균'] },
-  { ko:'베르가못',   en:'Bergamot · Citrus bergamia',         desc:'기분을 밝게 하고 불안을 줄여줘요. 감귤과 플로럴이 섞인 향이 공간을 상쾌하게 만들어요.',               tags:['기분','불안','항우울'] },
-  { ko:'시더우드',   en:'Cedarwood · Juniperus virginiana',   desc:'땅의 기운이 느껴지는 깊은 나무 향이에요. 수면 유도와 아이들 진정에도 효과적이에요.',                  tags:['수면','진정','집중'] },
-  { ko:'티트리',     en:'Tea Tree · Melaleuca alternifolia',  desc:'강력한 항균·항바이러스 효과를 가져요. 피부 트러블, 상처 소독에 두루 활용해보세요.',                   tags:['항균','피부트러블','살균'] },
-  { ko:'온가드',     en:'On Guard · Protective Blend',        desc:'면역력을 지켜주는 보호 블렌드예요. 감기 계절에 확산하거나 발바닥에 도포하면 좋아요.',                  tags:['면역','감기예방','항균'] },
-  { ko:'딥블루',     en:'Deep Blue · Soothing Blend',         desc:'근육과 관절 통증 완화에 탁월한 블렌드예요. 운동 후 뭉친 부위에 마사지해 보세요.',                     tags:['근육통','관절','통증완화'] },
+  { ko:'라벤더',     en:'Lavender',      desc:'긴장 완화와 수면 개선에 탁월해요. 확산기에 3~4방울, 취침 전 목덜미에 희석 도포하면 좋아요.',          tags:['긴장완화','수면','스트레스'] },
+  { ko:'페퍼민트',   en:'Peppermint',    desc:'두통 완화와 집중력 향상에 도움을 줘요. 관자놀이에 소량 도포하거나 손에 비빈 후 흡입해보세요.',       tags:['두통','집중력','소화'] },
+  { ko:'레몬',       en:'Lemon',         desc:'기분 전환과 공기 정화에 좋아요. 물 한 잔에 한 방울 넣어 마시면 해독 효과를 기대할 수 있어요.',        tags:['정화','기분전환','면역'] },
+  { ko:'프랑킨센스', en:'Frankincense',  desc:'명상과 집중, 피부 재생에 활용돼요. 모든 오일의 왕으로 불리며 다른 오일의 효과를 높여줘요.',           tags:['명상','피부재생','면역'] },
+  { ko:'유칼립투스', en:'Eucalyptus',    desc:'호흡기 건강에 특히 좋아요. 코막힘이나 기침 시 흡입하거나 가슴에 희석 도포해보세요.',                 tags:['호흡기','코막힘','항균'] },
+  { ko:'베르가못',   en:'Bergamot',      desc:'기분을 밝게 하고 불안을 줄여줘요. 감귤과 플로럴이 섞인 향이 공간을 상쾌하게 만들어요.',               tags:['기분','불안','항우울'] },
+  { ko:'시더우드',   en:'Cedarwood',     desc:'땅의 기운이 느껴지는 깊은 나무 향이에요. 수면 유도와 아이들 진정에도 효과적이에요.',                  tags:['수면','진정','집중'] },
+  { ko:'티트리',     en:'Tea Tree',      desc:'강력한 항균·항바이러스 효과를 가져요. 피부 트러블, 상처 소독에 두루 활용해보세요.',                   tags:['항균','피부트러블','살균'] },
+  { ko:'온가드',     en:'On Guard',      desc:'면역력을 지켜주는 보호 블렌드예요. 감기 계절에 확산하거나 발바닥에 도포하면 좋아요.',                  tags:['면역','감기예방','항균'] },
+  { ko:'딥블루',     en:'Deep Blue',     desc:'근육과 관절 통증 완화에 탁월한 블렌드예요. 운동 후 뭉친 부위에 마사지해 보세요.',                     tags:['근육통','관절','통증완화'] },
 ];
 
 // ============================================================
@@ -1758,7 +1760,7 @@ async function submitRecipe() {
       _toastTimer = setTimeout(() => {
         el.classList.remove('show', 'clickable');
         el.onclick = null;
-      }, 10000);
+      }, 4000);
       return;
     }
   }
