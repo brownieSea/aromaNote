@@ -914,10 +914,12 @@ body { font-family: var(--sans); color: var(--text-1); }
         <div class="db-text" id="od-cautions"></div>
       </div>
       <div id="od-related-block" style="padding-top:4px">
-        <div id="od-related-header" style="display:flex;align-items:center;gap:8px;padding:0 18px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none">
-          <span class="db-label" style="white-space:nowrap;margin-bottom:0">관련 레시피</span>
-          <span id="od-related-count" style="font-size:10px;color:var(--text-3);white-space:nowrap;margin-right:4px"></span>
-          <div id="od-related-chips" style="display:flex;gap:6px;flex-shrink:0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 18px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <span class="db-label" style="white-space:nowrap;margin-bottom:0">관련 레시피</span>
+            <span id="od-related-count" style="font-size:10px;color:var(--text-3);white-space:nowrap"></span>
+          </div>
+          <div id="od-related-chips" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-left:8px"></div>
         </div>
         <div id="od-related-list"></div>
       </div>
@@ -1443,8 +1445,7 @@ function renderOodRecipes(oilName) {
         <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
           <div class="rm-method">${r.method||'혼합'}</div>
           <div class="rm-title">${r.title}</div>
-          <div class="rm-oils">${(r.oils_list||'').replace(/,/g,' · ')}</div>
-          <div class="rm-diff">${r.difficulty||'쉬움'}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${(r.oils_list||'').split(',').filter(Boolean).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>
         </div>`).join('')}
     </div>`;
 }
@@ -1464,8 +1465,7 @@ function renderRecentRecipes() {
       <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
         <div class="rm-method">${r.method||'혼합'}</div>
         <div class="rm-title">${r.title}</div>
-        <div class="rm-oils">${(r.oils_list||'').replace(/,/g,' · ')}</div>
-        <div class="rm-diff">${r.difficulty||'쉬움'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${(r.oils_list||'').split(',').filter(Boolean).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>
       </div>`).join('')}
   </div>`;
 }
