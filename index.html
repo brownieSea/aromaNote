@@ -731,9 +731,10 @@ body { font-family: var(--sans); color: var(--text-1); }
       </div>
       <button onclick="openAddRecipeForm()" style="flex-shrink:0;height:36px;padding:0 14px;border-radius:20px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);white-space:nowrap">＋ 새 레시피</button>
     </div>
-    <div style="display:flex;gap:7px;padding:10px 18px 0">
+    <div style="display:flex;gap:7px;padding:10px 18px 0;overflow-x:auto;scrollbar-width:none">
       <button class="chip on" id="filter-all-btn"    onclick="setRecipeMode('all',this)">전체 레시피</button>
-      <button class="chip"    id="filter-my-btn"     onclick="setRecipeMode('my',this)">내 오일 레시피</button>
+      <button class="chip"    id="filter-my-btn"     onclick="setRecipeMode('my',this)">보유 오일 레시피</button>
+      <button class="chip"    id="filter-mine-btn"   onclick="setRecipeMode('mine',this)">나의 레시피</button>
     </div>
     <div class="chip-row" id="category-chips"></div>
     <div style="padding:8px 18px 0;font-size:12px;color:var(--text-3)">
@@ -1509,13 +1510,16 @@ function renderRecipePage() {
 
 function goMyOilRecipes() {
   goTab('recipes');
-  setTimeout(() => setRecipeMode('my', null), 50);
+  setTimeout(() => {
+    setRecipeMode('my', document.getElementById('filter-my-btn'));
+  }, 50);
 }
 
 function setRecipeMode(mode, el) {
   state.recipeMode = mode;
   document.getElementById('filter-all-btn').classList.toggle('on', mode === 'all');
   document.getElementById('filter-my-btn').classList.toggle('on', mode === 'my');
+  document.getElementById('filter-mine-btn').classList.toggle('on', mode === 'mine');
   _activeCategoryFilter = '전체';
   document.querySelectorAll('#category-chips .chip').forEach((c,i) => c.classList.toggle('on', i===0));
   document.getElementById('recipe-search').value = '';
@@ -1527,7 +1531,7 @@ function renderRecipeList(filter='', categoryFilter='전체') {
   // 가나다 순 정렬
   let list = [...state.recipes].sort((a, b) => a.title.localeCompare(b.title, 'ko'));
 
-  // 내 오일 모드
+  // 보유 오일 레시피 모드
   if (state.recipeMode === 'my') {
     const myOilsLower = (state.user?.my_oils || []).map(o => o.toLowerCase());
     list = list.filter(r => {
@@ -1535,6 +1539,12 @@ function renderRecipeList(filter='', categoryFilter='전체') {
       const rOils = r.oils_list.split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
       return rOils.length > 0 && rOils.every(o => myOilsLower.includes(o));
     });
+  }
+
+  // 나의 레시피 모드
+  if (state.recipeMode === 'mine') {
+    const myUid = state.user?.uid || '';
+    list = list.filter(r => (r.source || '').trim() === myUid.trim());
   }
 
   if (categoryFilter && categoryFilter !== '전체')
@@ -2353,7 +2363,16 @@ function goTab(tab) {
     _activeCategoryFilter = '전체';
 
     if (state.myRecipeMode) {
-      // 내 레시피 모드
+      state.recipeMode = 'mine';
+      document.getElementById('filter-all-btn').classList.remove('on');
+      document.getElementById('filter-my-btn').classList.remove('on');
+      document.getElementById('filter-mine-btn').classList.add('on');
+      state.myRecipeMode = false;
+      renderRecipeList('', '전체');
+      return;
+    }
+    if (false && state.myRecipeMode) {
+      // 내 레시피 모드 (legacy)
       const myUid = state.user?.uid || '';
       const myList = [...state.recipes]
         .sort((a,b) => a.title.localeCompare(b.title,'ko'))
