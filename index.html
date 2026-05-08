@@ -694,6 +694,13 @@ body { font-family: var(--sans); color: var(--text-1); }
     </div>
     <div id="recommend-area"></div>
 
+    <!-- 최근 등록 레시피 -->
+    <div class="section-hd">
+      <h2>최근 등록 레시피</h2>
+      <a onclick="goTab('recipes')">전체보기 →</a>
+    </div>
+    <div id="recent-recipes-area"></div>
+
     <!-- 즐겨찾기 -->
     <div class="section-hd">
       <h2>즐겨찾기</h2>
@@ -1289,6 +1296,9 @@ function renderHome() {
   // 내 오일 추천
   renderRecommend();
 
+  // 최근 등록 레시피
+  renderRecentRecipes();
+
   // 즐겨찾기
   renderHomeFav();
 }
@@ -1340,20 +1350,25 @@ function renderOodRecipes(oilName) {
   );
 
   if (!matched.length) {
-    area.innerHTML = '';
+    area.innerHTML = `
+      <div class="section-hd" style="padding-top:14px">
+        <h2>${oilName} 활용 레시피</h2>
+      </div>
+      <div class="empty-box" style="margin:0 18px">
+        <p>${oilName}이(가) 사용된 등록된 레시피가 없어요.</p>
+      </div>`;
     return;
   }
 
-  // 매번 랜덤하게 6개 뽑기
-  const shuffled = [...matched].sort(() => Math.random() - 0.5);
-  const picked = shuffled.slice(0, 6);
+  // 랜덤 3개
+  const picked = [...matched].sort(() => Math.random() - 0.5).slice(0, 3);
 
   area.innerHTML = `
     <div class="section-hd" style="padding-top:14px">
       <h2>${oilName} 활용 레시피</h2>
       <a onclick="goTab('recipes')" style="font-size:12px;color:var(--accent)">전체보기 →</a>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px 18px;box-sizing:border-box">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">
       ${picked.map(r => `
         <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
           <div class="rm-method">${r.method||'혼합'}</div>
@@ -1362,6 +1377,27 @@ function renderOodRecipes(oilName) {
           <div class="rm-diff">${r.difficulty||'쉬움'}</div>
         </div>`).join('')}
     </div>`;
+}
+
+function renderRecentRecipes() {
+  const area = document.getElementById('recent-recipes-area');
+  if (!area || !state.recipes.length) return;
+
+  // recipe_id가 USR로 시작하면 사용자 등록, 숫자 ID는 원본 데이터
+  // 전체 레시피에서 마지막 3개 (시트 기준 최근 등록순)
+  const recent = [...state.recipes]
+    .reverse()
+    .slice(0, 3);
+
+  area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px">
+    ${recent.map(r => `
+      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
+        <div class="rm-method">${r.method||'혼합'}</div>
+        <div class="rm-title">${r.title}</div>
+        <div class="rm-oils">${(r.oils_list||'').replace(/,/g,' · ')}</div>
+        <div class="rm-diff">${r.difficulty||'쉬움'}</div>
+      </div>`).join('')}
+  </div>`;
 }
 
 function renderHomeFav() {
