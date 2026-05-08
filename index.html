@@ -1133,14 +1133,21 @@ async function loadSharedRecipe(recipeId) {
     return;
   }
 
-  // 앱 셸 표시 (탭 숨기고 레시피만)
-  document.getElementById('app').style.display = 'flex';
+  // 탑바 액션(검색, 아바타) 숨기기
+  document.querySelector('.topbar-actions').style.display = 'none';
   // 하단 탭 숨기기
   document.querySelector('.bottom-nav').style.display = 'none';
+
   // 레시피 상세 열기
   openRecipeDetail(recipeId);
 
-  // 하단에 로그인 유도 배너 표시
+  // 상세 버튼들 숨기기 (back, 즐겨찾기, 공유, 캡쳐)
+  setTimeout(() => {
+    const btnArea = document.querySelector('#page-recipe-detail .detail-hero > div[style*="absolute"]');
+    if (btnArea) btnArea.style.display = 'none';
+  }, 50);
+
+  // 하단 로그인 유도 배너
   const banner = document.createElement('div');
   banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:var(--accent);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;z-index:50;';
   banner.innerHTML = '<span style="font-size:13px">로그인하면 모든 기능을 사용할 수 있어요</span><button onclick="location.reload()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:var(--sans)">로그인</button>';
