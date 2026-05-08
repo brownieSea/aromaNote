@@ -1788,7 +1788,7 @@ function renderMyPage() {
 
   // 내 레시피 카운트
   const myUid = state.user?.uid || '';
-  const myRecipeCount = state.recipes.filter(r => r.source === myUid || r.source === '본인').length;
+  const myRecipeCount = state.recipes.filter(r => (r.source||'').trim() === myUid.trim()).length;
   document.getElementById('my-recipe-count').textContent = myRecipeCount + '개';
   document.getElementById('my-recipe-section').style.display = 'block';
 }
@@ -1916,7 +1916,7 @@ function showMyRecipes() {
   // 내 UID로 등록한 레시피만 필터
   setTimeout(() => {
     const myUid = state.user?.uid || '';
-    const myList = state.recipes.filter(r => r.source === myUid || r.source === '본인');
+    const myList = state.recipes.filter(r => (r.source||'').trim() === myUid.trim());
     const countEl = document.getElementById('recipe-count-label');
     if (countEl) countEl.textContent = myList.length + '개';
     const el = document.getElementById('recipe-list');
