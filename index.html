@@ -1595,19 +1595,16 @@ async function shareRecipe() {
   const r  = state.recipes.find(x => x.id === id);
   if (!r) return;
 
-  const shareUrl = location.origin + location.pathname + '?recipe=' + encodeURIComponent(id);
+  const shareUrl   = location.origin + location.pathname + '?recipe=' + encodeURIComponent(id);
   const shareTitle = '🌿 ' + r.title;
-  const shareText = [
-    r.category ? '📌 ' + [r.category, r.sub_category].filter(Boolean).join(' > ') : '',
-    r.method   ? '🔧 ' + r.method : '',
-  ].filter(Boolean).join('  ');
+  // text에 URL 포함 — 앱마다 url 파라미터 처리가 달라서 text에도 넣음
+  const shareText  = '🌿 ' + r.title + '\n' + shareUrl;
 
   if (navigator.share) {
     try {
       await navigator.share({
         title: shareTitle,
         text : shareText,
-        url  : shareUrl,
       });
       return;
     } catch(e) {
@@ -1615,7 +1612,7 @@ async function shareRecipe() {
     }
   }
   // fallback — URL 클립보드 복사
-  const copyText = shareTitle + '\n' + shareUrl;
+  const copyText = shareText;
   if (navigator.clipboard) {
     await navigator.clipboard.writeText(copyText).catch(() => {});
   } else {
