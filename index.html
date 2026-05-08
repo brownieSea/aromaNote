@@ -1105,13 +1105,16 @@ async function afterLogin() {
 }
 
 async function loadAllData() {
-  // 유저 데이터
+  // 유저 데이터 — localStorage의 my_oils를 우선 유지
   try {
     if (state.user) {
+      const localMyOils = [...(state.user.my_oils || [])]; // 현재 로컬 상태 보존
       const r = await api({ action:'getUserData', uid: state.user.uid });
       if (r && r.success) {
         state.user.favorites = r.data.favorites || [];
-        state.user.my_oils   = r.data.my_oils   || [];
+        // my_oils는 로컬이 더 최신일 수 있으므로 로컬 우선
+        // 단, 로컬이 비어있으면 서버 데이터 사용
+        state.user.my_oils   = localMyOils.length > 0 ? localMyOils : (r.data.my_oils || []);
         state.user.nickname  = r.data.nickname  || state.user.nickname;
         localStorage.setItem('an_user', JSON.stringify(state.user));
         updateTopbar();
@@ -1912,8 +1915,14 @@ async function toggleMyOilQuick(name, btn) {
   toast(isAdding ? name + ' 추가됐어요' : name + ' 제거됐어요');
   renderRecommend();
 
-  // API 백그라운드
+  // API 저장 후 확정
   api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: updated })
+    .then(r => {
+      if (r && r.success) {
+        state.user.my_oils = updated;
+        localStorage.setItem('an_user', JSON.stringify(state.user));
+      }
+    })
     .catch(() => toast('저장 중 오류가 발생했어요'));
 }
 
@@ -1984,8 +1993,15 @@ async function saveMyOils() {
   renderRecommend();
   renderOilGrid(document.getElementById('oil-search').value, _activeTypeFilter);
 
-  // API는 백그라운드
+  // API 저장 후 서버 데이터로 확정
   api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: checked })
+    .then(r => {
+      if (r && r.success) {
+        // 서버 저장 완료 — localStorage에 확정 반영
+        state.user.my_oils = checked;
+        localStorage.setItem('an_user', JSON.stringify(state.user));
+      }
+    })
     .catch(() => toast('저장 중 오류가 발생했어요'));
 }
 
