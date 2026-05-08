@@ -6,6 +6,7 @@
 <title>Aroma Note</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ── Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -752,6 +753,9 @@ body { font-family: var(--sans); color: var(--text-1); }
         <button class="detail-fav-btn" id="d-fav-btn" onclick="toggleFav()">♡</button>
         <button class="detail-share-btn" id="d-share-btn" onclick="shareRecipe()">
           <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
+        <button class="detail-share-btn" id="d-capture-btn" onclick="captureRecipe()">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
       </div>
       <div class="detail-category" id="d-category"></div>
@@ -1619,6 +1623,40 @@ function openRecipeDetail(id) {
   }
 
   showPage('page-recipe-detail');
+}
+
+async function captureRecipe() {
+  const title = document.getElementById('d-title').textContent || '레시피';
+  const btn   = document.getElementById('d-capture-btn');
+
+  btn.style.opacity = '0.5';
+  btn.style.pointerEvents = 'none';
+  toast('이미지 저장 중...');
+
+  try {
+    const target = document.getElementById('page-recipe-detail');
+    const canvas = await html2canvas(target, {
+      backgroundColor: '#f5f4f1',
+      scale: 2,
+      useCORS: true,
+      scrollY: -window.scrollY,
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight,
+    });
+
+    // 다운로드
+    const link = document.createElement('a');
+    link.download = title + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('이미지가 저장됐어요 📷');
+  } catch(e) {
+    console.error(e);
+    toast('캡쳐 중 오류가 발생했어요');
+  } finally {
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+  }
 }
 
 async function shareRecipe() {
