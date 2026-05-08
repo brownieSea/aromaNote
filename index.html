@@ -1412,7 +1412,7 @@ function renderRecommend() {
   const picked = [...allMatched].sort(() => Math.random() - 0.5).slice(0, 3);
   area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">${picked.map(r => `
     <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
-      <div class="rm-method">${r.method||'혼합'}</div>
+      <div class="rm-method">${r.category||r.method||''}</div>
       <div class="rm-title">${r.title}</div>
       <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
     </div>`).join('')}</div>`;
@@ -1453,7 +1453,7 @@ function renderOodRecipes(oilName) {
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">
       ${picked.map(r => `
         <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
-          <div class="rm-method">${r.method||'혼합'}</div>
+          <div class="rm-method">${r.category||r.method||''}</div>
           <div class="rm-title">${r.title}</div>
           <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
         </div>`).join('')}
@@ -1472,7 +1472,7 @@ function renderRecentRecipes() {
   area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px">
     ${recent.map(r => `
       <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
-        <div class="rm-method">${r.method||'혼합'}</div>
+        <div class="rm-method">${r.category||r.method||''}</div>
         <div class="rm-title">${r.title}</div>
         <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
       </div>`).join('')}
@@ -2095,7 +2095,7 @@ function openOilDetail(oil) {
 
     const gridHtml = (list) => list.map(r => `
       <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
-        <div class="rm-method">${r.method||'혼합'}</div>
+        <div class="rm-method">${r.category||r.method||''}</div>
         <div class="rm-title">${r.title}</div>
         <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
       </div>`).join('');
@@ -2240,7 +2240,7 @@ function filterOdRelated(cat, btn) {
   grid.style.padding = '0 18px';
   grid.innerHTML = list.map(r => `
     <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
-      <div class="rm-method">${r.method||'혼합'}</div>
+      <div class="rm-method">${r.category||r.method||''}</div>
       <div class="rm-title">${r.title}</div>
       <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
     </div>`).join('');
