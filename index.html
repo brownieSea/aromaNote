@@ -2019,7 +2019,7 @@ function showFavList() {
   const favIds = state.user?.favorites || [];
   const favs   = favIds.map(id => state.recipes.find(r => r.id === id)).filter(Boolean);
   if (!favs.length) { area.innerHTML = `<div style="padding:0 14px 14px"><div class="empty-box"><p>즐겨찾기한 레시피가 없어요.</p></div></div>`; return; }
-  area.innerHTML = `<div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:8px">${favs.map(r=>`
+  area.innerHTML = `<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:8px">${favs.map(r=>`
     <div class="fav-item" onclick="openRecipeDetail('${r.id}')">
       <div><div class="fi-title">${r.title}</div><div class="fi-sub">${r.method||''} · ${r.category||''}</div></div>
       <div class="fi-heart">♥</div>
