@@ -690,8 +690,9 @@ body { font-family: var(--sans); color: var(--text-1); }
     <!-- 내 오일 추천 -->
     <div class="section-hd">
       <h2>내 오일로 만들 수 있어요</h2>
-      <a onclick="goMyOilRecipes()" style="background:var(--accent-l);color:var(--accent);padding:6px 14px;border-radius:20px;font-weight:500">레시피 보기 →</a>
+      <a onclick="goMyOilRecipes()">전체보기 →</a>
     </div>
+    <div id="recommend-area"></div>
 
     <!-- 즐겨찾기 -->
     <div class="section-hd">
@@ -1287,7 +1288,36 @@ function renderHome() {
 }
 
 function renderRecommend() {
-  // 버튼만 남기고 카드 제거 — 버튼은 HTML에 고정
+  const area = document.getElementById('recommend-area');
+  if (!area) return;
+  const myOils = state.user?.my_oils || [];
+
+  if (!myOils.length) {
+    area.innerHTML = `<div class="empty-box"><p>아직 내 오일이 없어요.<br>오일을 등록하면 딱 맞는 레시피를 추천해드려요!</p><button class="setup-btn" onclick="goTab('mypage')">오일 등록하러 가기 →</button></div>`;
+    return;
+  }
+
+  const myOilsLower = myOils.map(o => o.toLowerCase());
+  const allMatched = state.recipes.filter(r => {
+    if (!r.oils_list) return false;
+    const rOils = r.oils_list.split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
+    return rOils.length > 0 && rOils.every(o => myOilsLower.includes(o));
+  });
+
+  if (!allMatched.length) {
+    area.innerHTML = `<div class="empty-box"><p>현재 오일로 만들 수 있는 레시피를 찾는 중이에요.</p></div>`;
+    return;
+  }
+
+  // 랜덤 3개
+  const picked = [...allMatched].sort(() => Math.random() - 0.5).slice(0, 3);
+  area.innerHTML = `<div class="hscroll">${picked.map(r => `
+    <div class="recipe-mini" onclick="openRecipeDetail('${r.id}')">
+      <div class="rm-method">${r.method||'혼합'}</div>
+      <div class="rm-title">${r.title}</div>
+      <div class="rm-oils">${(r.oils_list||'').replace(/,/g,' · ')}</div>
+      <div class="rm-diff">${r.difficulty||'쉬움'}</div>
+    </div>`).join('')}</div>`;
 }
 
 function renderOodRecipes(oilName) {
@@ -1317,7 +1347,7 @@ function renderOodRecipes(oilName) {
       <h2>${oilName} 활용 레시피</h2>
       <a onclick="goTab('recipes')" style="font-size:12px;color:var(--accent)">전체보기 →</a>
     </div>
-    <div class="hscroll">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px">
       ${picked.map(r => `
         <div class="recipe-mini" onclick="openRecipeDetail('${r.id}')">
           <div class="rm-method">${r.method||'혼합'}</div>
