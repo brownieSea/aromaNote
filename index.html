@@ -1989,7 +1989,7 @@ function oilImgEl(name, size='36px', radius='9px') {
   if (url) {
     return `<img src="${url}" alt="${name}" style="width:${size};height:${size};border-radius:${radius};object-fit:cover;display:block;">`;
   }
-  return `<svg viewBox="0 0 24 24" style="width:${size};height:${size};fill:#c8ccd6;opacity:0.6"><path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2z"/></svg>`;
+  return `<span style="font-size:calc(${size} * 0.5)">${OIL_ICONS[name]||OIL_ICON_DEFAULT}</span>`;
 }
 
 function renderOilPage() {
@@ -2058,7 +2058,7 @@ function openOilDetail(oil) {
   if (odUrl) {
     odImgWrap.innerHTML = `<img src="${odUrl}" alt="${oil.name_ko}">`;
   } else {
-    odImgWrap.innerHTML = `<svg viewBox="0 0 24 24" style="width:80px;height:80px;fill:#c8ccd6;opacity:0.6"><path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2z"/></svg>`;
+    odImgWrap.innerHTML = `<div class="od-emoji">${OIL_ICONS[oil.name_ko] || OIL_ICON_DEFAULT}</div>`;
   }
   document.getElementById('od-name').textContent    = oil.name_ko;
   document.getElementById('od-en').textContent      = oil.name_en || '';
