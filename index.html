@@ -371,6 +371,14 @@ body { font-family: var(--sans); color: var(--text-1); }
 }
 .detail-share-btn:hover { background: rgba(255,255,255,0.25); }
 .detail-share-btn svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.detail-edit-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.detail-edit-btn:hover { background: rgba(255,255,255,0.25); }
+.detail-edit-btn svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .detail-body  { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
 #od-related-block { margin: 0 -18px; padding-bottom: 8px; }
@@ -758,6 +766,9 @@ body { font-family: var(--sans); color: var(--text-1); }
         </button>
         <button class="detail-share-btn" id="d-capture-btn" onclick="captureRecipe()">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="detail-edit-btn" id="d-edit-btn" onclick="editRecipe()" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
       </div>
       <div class="detail-category" id="d-category"></div>
@@ -1646,7 +1657,56 @@ function openRecipeDetail(id) {
     document.getElementById('d-caution-block').style.display = 'none';
   }
 
+  // 본인 레시피면 수정 버튼 표시
+  const editBtn = document.getElementById('d-edit-btn');
+  if (editBtn) {
+    const isOwner = r.source && r.source.trim() === (state.user?.uid || '').trim();
+    editBtn.style.display = isOwner ? 'flex' : 'none';
+  }
+
   showPage('page-recipe-detail');
+}
+
+function editRecipe() {
+  const id = document.getElementById('d-fav-btn').dataset.id;
+  const r  = state.recipes.find(x => x.id === id);
+  if (!r) return;
+
+  state.editRecipeId = id;
+  document.getElementById('form-title').textContent = '레시피 수정';
+  document.getElementById('submit-btn').textContent = '수정하기';
+
+  // 폼 채우기
+  populateFormSelects();
+  document.getElementById('f-title').value        = r.title || '';
+  document.getElementById('f-category').value     = r.category || '';
+  document.getElementById('f-sub-category').value = r.sub_category || '';
+  document.getElementById('f-method').value       = r.method || '';
+  document.getElementById('f-difficulty').value   = r.difficulty || '쉬움';
+  document.getElementById('f-base').value         = r.base_materials || '';
+  document.getElementById('f-how-to-make').value  = r.how_to_make || '';
+  document.getElementById('f-how-to-use').value   = r.how_to_use || '';
+  document.getElementById('f-apply-area').value   = r.apply_area || '';
+  document.getElementById('f-tags').value         = r.tags || '';
+  document.getElementById('f-caution').value      = r.caution || '';
+  document.getElementById('f-notes').value        = r.notes || '';
+
+  // 오일 필드 채우기 (역순 — 추가 버튼이 위에서 추가하므로)
+  const oilContainer = document.getElementById('oil-fields');
+  oilContainer.innerHTML = '';
+  const oils = [...r.oils].reverse();
+  oils.forEach((o, i) => {
+    const n = i + 1;
+    const div = document.createElement('div');
+    div.className = 'oil-field-row';
+    div.innerHTML = makeOilFieldRow(n);
+    oilContainer.appendChild(div);
+    div.querySelector('[data-oil]').value   = o.oil   || '';
+    div.querySelector('[data-drops]').value = o.drops || '';
+  });
+
+  state.prevPage = state.page;
+  showPage('page-recipe-form');
 }
 
 async function captureRecipe() {
