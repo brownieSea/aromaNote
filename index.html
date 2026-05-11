@@ -1,718 +1,2696 @@
-// ============================================================
-//  Aroma Note — Google Apps Script API
-//  배포: 확장프로그램 > Apps Script > 배포 > 웹앱
-//  실행 계정: 접속자 계정으로 실행
-//  액세스: Google 계정이 있는 모든 사용자
-// ============================================================
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Aroma Note</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: #e8e6e0; }
 
-// ── 화이트리스트: 로그인 없이 바로 접근 가능한 이메일 ─────────
-const WHITELIST_EMAILS = [
-  'heedonge@gmail.com',
+:root {
+  --bg       : #f5f4f1;
+  --surface  : #fafaf8;
+  --surface2 : #f0efe9;
+  --border   : rgba(80,85,100,0.10);
+  --border2  : rgba(80,85,100,0.18);
+  --text-1   : #1c1e26;
+  --text-2   : #565a6a;
+  --text-3   : #9096a8;
+  --accent   : #4a6fa5;
+  --accent-l : #e8eef6;
+  --accent-m : #8fadd4;
+  --green    : #4e7060;
+  --green-l  : #e8f0ea;
+  --amber    : #7a6030;
+  --amber-l  : #f5eedc;
+  --rose     : #a05060;
+  --rose-l   : #f5e8ec;
+  --r-sm     : 8px;
+  --r-md     : 12px;
+  --r-lg     : 18px;
+  --r-xl     : 24px;
+  --nav-h    : 62px;
+  --top-h    : 54px;
+  --sans     : 'DM Sans', sans-serif;
+  --serif    : 'DM Serif Display', serif;
+}
+
+body { font-family: var(--sans); color: var(--text-1); }
+
+/* ── App Shell ── */
+#app {
+  position: fixed; inset: 0;
+  max-width: 480px; margin: 0 auto;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Topbar ── */
+.topbar {
+  height: var(--top-h); flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+}
+.logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.2px; }
+.logo em { color: var(--accent); font-style: italic; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-2); transition: background 0.15s;
+}
+.icon-btn:hover { background: var(--surface2); }
+.icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.avatar-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent-l); border: 1.5px solid var(--border2);
+  font-size: 13px; font-weight: 500; color: var(--accent);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.avatar-btn:hover { background: var(--accent); color: #fff; }
+
+/* ── Pages ── */
+.page { display: none; flex: 1; overflow-y: auto; overflow-x: hidden; }
+.page.active { display: block; }
+.page::-webkit-scrollbar { width: 0; }
+.pb-nav { padding-bottom: calc(var(--nav-h) + 16px); }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  height: var(--nav-h); flex-shrink: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px; border: none; background: none;
+  color: var(--text-3); cursor: pointer;
+  font-family: var(--sans); transition: color 0.15s;
+  padding-bottom: 4px;
+}
+.nav-item.active { color: var(--accent); }
+.nav-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.nav-label { font-size: 10px; font-weight: 500; }
+.nav-pip { width: 3px; height: 3px; border-radius: 50%; background: var(--accent); opacity: 0; margin-top: 1px; }
+.nav-item.active .nav-pip { opacity: 1; }
+
+/* ── Utility ── */
+.section-hd {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 18px 10px;
+}
+.section-hd h2 { font-size: 13px; font-weight: 500; color: var(--text-1); }
+.section-hd a  { font-size: 12px; color: var(--accent); cursor: pointer; }
+
+.search-row {
+  margin: 14px 18px 0;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+}
+.search-row svg { width: 15px; height: 15px; stroke: var(--text-3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.search-row input {
+  flex: 1; border: none; background: none;
+  font-family: var(--sans); font-size: 14px;
+  color: var(--text-1); outline: none;
+}
+.search-row input::placeholder { color: var(--text-3); }
+
+.chip-row { display: flex; gap: 7px; overflow-x: auto; padding: 10px 18px 0; }
+.chip-row::-webkit-scrollbar { height: 0; }
+.chip {
+  flex-shrink: 0; font-size: 12px; padding: 5px 13px;
+  border-radius: 20px; border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text-2);
+  cursor: pointer; font-family: var(--sans); white-space: nowrap;
+  transition: all 0.15s;
+}
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip:hover:not(.on) { border-color: var(--accent-m); color: var(--accent); }
+
+.badge {
+  display: inline-block; font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; white-space: nowrap;
+}
+.badge-blue  { background: var(--accent-l); color: var(--accent); }
+.badge-green { background: var(--green-l);  color: var(--green);  }
+.badge-amber { background: var(--amber-l);  color: var(--amber);  }
+.badge-rose  { background: var(--rose-l);   color: var(--rose);   }
+
+/* ── Cards / Lists ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.card-press { cursor: pointer; transition: border-color 0.15s, transform 0.12s; }
+.card-press:hover  { border-color: var(--accent-m); }
+.card-press:active { transform: scale(0.98); }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: calc(var(--nav-h) + 14px);
+  left: 50%; transform: translateX(-50%) translateY(10px);
+  background: var(--text-1); color: #fff;
+  font-size: 13px; padding: 9px 18px; border-radius: 20px;
+  opacity: 0; transition: all 0.25s; pointer-events: none;
+  white-space: nowrap; z-index: 999;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.show.clickable { pointer-events: all; cursor: pointer; }
+
+/* ── Loading ── */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; z-index: 200;
+  transition: opacity 0.3s;
+}
+#loading .logo-lg { font-family: var(--serif); font-size: 32px; }
+#loading .logo-lg em { color: var(--accent); font-style: italic; }
+.spinner {
+  width: 22px; height: 22px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading.hidden { opacity: 0; pointer-events: none; }
+
+/* ── Login Screen ── */
+#login-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 100;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 32px;
+  transition: opacity 0.3s;
+}
+#login-screen.hidden { opacity: 0; pointer-events: none; }
+.login-logo { font-family: var(--serif); font-size: 34px; text-align: center; margin-bottom: 8px; }
+.login-logo em { color: var(--accent); font-style: italic; }
+.login-sub { font-size: 13px; color: var(--text-3); text-align: center; margin-bottom: 40px; letter-spacing: 0.3px; }
+.login-form { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; }
+.login-input {
+  width: 100%; padding: 13px 16px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--r-md); font-family: var(--sans);
+  font-size: 14px; color: var(--text-1); outline: none;
+  transition: border-color 0.15s;
+}
+.login-input:focus { border-color: var(--accent); }
+.login-input::placeholder { color: var(--text-3); }
+.login-btn {
+  width: 100%; padding: 14px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: var(--r-md);
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+}
+.login-btn:hover { opacity: 0.88; }
+.login-hint { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; line-height: 1.6; }
+
+/* ═══════════════════════════════════════════════════════════
+   HOME PAGE
+═══════════════════════════════════════════════════════════ */
+.home-head {
+  padding: 18px 18px 0;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.greeting-sub  { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+.greeting-name { font-family: var(--serif); font-size: 22px; color: var(--text-1); }
+.greeting-name.is-email { font-family: var(--sans); font-size: 12px; color: var(--text-3); font-weight: 400; letter-spacing: 0; }
+.date-pill {
+  font-size: 11px; color: var(--text-3);
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 5px 11px; border-radius: 20px;
+}
+
+/* 오늘의 오일 카드 */
+.ood-card {
+  margin: 14px 18px 0;
+  background: var(--accent);
+  border-radius: var(--r-lg);
+  padding: 20px 20px 18px;
+  position: relative; overflow: hidden;
+  cursor: pointer; transition: transform 0.15s, opacity 0.15s;
+}
+.ood-card:active { transform: scale(0.98); }
+.ood-card::before {
+  content: ''; position: absolute;
+  top: -24px; right: -16px;
+  width: 110px; height: 110px;
+  background: rgba(255,255,255,0.07); border-radius: 50%;
+}
+.ood-card::after {
+  content: ''; position: absolute;
+  bottom: -18px; right: 28px;
+  width: 70px; height: 70px;
+  background: rgba(255,255,255,0.04); border-radius: 50%;
+}
+.ood-eyebrow { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 7px; }
+.ood-name-ko { font-family: var(--serif); font-size: 26px; color: #fff; line-height: 1.1; margin-bottom: 3px; }
+.ood-name-en { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 12px; letter-spacing: 0.2px; }
+.ood-desc    { font-size: 13px; color: rgba(255,255,255,0.82); line-height: 1.6; margin-bottom: 14px; }
+.ood-tags    { display: flex; gap: 6px; flex-wrap: wrap; }
+.ood-tag     { font-size: 10px; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.12); padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.14); }
+.ood-arrow {
+  position: absolute; top: 18px; right: 18px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(255,255,255,0.14);
+  display: flex; align-items: center; justify-content: center;
+}
+.ood-arrow svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 내 오일 추천 카드 스크롤 */
+.hscroll { display: flex; gap: 10px; padding: 2px 18px 4px; overflow-x: auto; }
+.hscroll::-webkit-scrollbar { height: 0; }
+.recipe-mini {
+  flex-shrink: 0; width: 150px; min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 13px; cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+}
+.recipe-mini:hover  { border-color: var(--accent-m); }
+.recipe-mini:active { transform: scale(0.97); }
+.rm-method { font-size: 10px; font-weight: 500; color: var(--accent); background: var(--accent-l); display: inline-block; padding: 2px 8px; border-radius: 10px; margin-bottom: 8px; }
+.rm-title  { font-size: 13px; font-weight: 500; color: var(--text-1); line-height: 1.4; margin-bottom: 6px; }
+.rm-oils   { font-size: 11px; color: var(--text-3); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm-diff   { font-size: 10px; color: var(--text-3); display: flex; align-items: center; gap: 4px; }
+.rm-diff::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; }
+
+.empty-box {
+  margin: 0 18px;
+  background: var(--surface);
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--r-md);
+  padding: 20px 18px; text-align: center;
+}
+.empty-box p  { font-size: 13px; color: var(--text-3); line-height: 1.6; }
+.empty-box .setup-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 12px; font-size: 12px; font-weight: 500; color: var(--accent);
+  background: var(--accent-l); border: 1px solid var(--border2);
+  padding: 7px 14px; border-radius: 20px; cursor: pointer;
+  font-family: var(--sans); transition: all 0.15s; border: none;
+}
+.empty-box .setup-btn:hover { background: var(--accent); color: #fff; }
+
+/* 즐겨찾기 리스트 */
+.fav-list   { padding: 0 18px; display: flex; flex-direction: column; gap: 8px; }
+.fav-item   { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.15s; }
+.fav-item:hover { border-color: var(--accent-m); }
+.fi-title   { font-size: 13px; font-weight: 500; color: var(--text-1); margin-bottom: 3px; }
+.fi-sub     { font-size: 11px; color: var(--text-3); }
+.fi-heart   { font-size: 16px; color: var(--rose); flex-shrink: 0; margin-left: 10px; }
+
+/* ═══════════════════════════════════════════════════════════
+   RECIPE PAGE & LIST
+═══════════════════════════════════════════════════════════ */
+.recipe-list { display: flex; flex-direction: column; gap: 9px; padding: 12px 18px 0; }
+.rl-item     { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px; cursor: pointer; transition: border-color 0.15s; }
+.rl-item:hover { border-color: var(--accent-m); }
+.rl-top      { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.rl-title    { font-size: 14px; font-weight: 500; color: var(--text-1); line-height: 1.35; flex: 1; padding-right: 8px; }
+.rl-meta     { font-size: 11px; color: var(--text-3); display: flex; gap: 10px; margin-bottom: 8px; }
+.oil-tags    { display: flex; gap: 5px; flex-wrap: wrap; }
+.oil-tag     { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--green-l); color: var(--green); border: 1px solid rgba(78,112,96,0.12); }
+
+/* ── Recipe Detail ── */
+#page-recipe-detail { display: none; flex: 1; overflow-y: auto; }
+#page-recipe-detail.active { display: block; }
+.detail-hero {
+  background: var(--accent);
+  padding: 20px 100px 22px 18px;
+  position: relative;
+}
+.detail-back {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: rgba(255,255,255,0.7);
+  cursor: pointer; margin-bottom: 14px; background: none; border: none;
+  font-family: var(--sans);
+}
+.detail-back svg { width: 14px; height: 14px; stroke: rgba(255,255,255,0.7); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.detail-category { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
+.detail-title   { font-family: var(--serif); font-size: 24px; color: #fff; line-height: 1.2; margin-bottom: 10px; }
+.detail-tags    { display: flex; gap: 6px; flex-wrap: wrap; }
+.detail-tag     { font-size: 10px; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.12); padding: 2px 10px; border-radius: 20px; }
+.detail-fav-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer; transition: background 0.15s;
+}
+.detail-fav-btn:hover { background: rgba(255,255,255,0.25); }
+.detail-share-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.detail-share-btn:hover { background: rgba(255,255,255,0.25); }
+.detail-share-btn svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.detail-edit-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.detail-edit-btn:hover { background: rgba(255,255,255,0.25); }
+.detail-edit-btn svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.detail-body  { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+#od-related-block { margin: 0 -18px; padding-bottom: 8px; }
+.detail-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px 16px; }
+.db-label  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 10px; }
+.db-text   { font-size: 13px; color: var(--text-2); line-height: 1.65; }
+.db-text ul { padding-left: 16px; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.db-text ul li { line-height: 1.55; }
+
+.oils-grid { display: flex; flex-direction: column; gap: 7px; }
+.oil-row         { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--green-l); border-radius: var(--r-sm); }
+.oil-row.oil-row-missing { background: var(--surface2); }
+.oil-row-name  { font-size: 13px; font-weight: 500; color: var(--green); }
+.oil-row.oil-row-missing .oil-row-name  { color: var(--text-3); }
+.oil-row-drops { font-size: 12px; color: var(--green); opacity: 0.7; }
+.oil-row.oil-row-missing .oil-row-drops { color: var(--text-3); }
+.no-oil-badge  { font-size: 9px; color: var(--text-3); background: var(--border2); padding: 1px 5px; border-radius: 6px; margin-left: 4px; vertical-align: middle; font-weight: 400; }
+
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.meta-item { background: var(--surface2); border-radius: var(--r-sm); padding: 10px 12px; }
+.meta-key  { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.meta-val  { font-size: 13px; font-weight: 500; color: var(--text-1); }
+
+/* ── Recipe Form ── */
+#page-recipe-form { display: none; flex: 1; overflow-y: auto; }
+#page-recipe-form.active { display: block; }
+.form-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; padding-bottom: 32px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 5px; display: block; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 11px 13px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--r-sm); font-family: var(--sans);
+  font-size: 14px; color: var(--text-1); outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239096a8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+.oil-fields { display: flex; flex-direction: column; gap: 8px; }
+.oil-field-row { display: grid; grid-template-columns: 1fr 100px 28px; gap: 6px; align-items: center; }
+.remove-oil-btn { width: 28px; height: 28px; border-radius: 50%; background: var(--rose-l); border: none; color: var(--rose); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.add-oil-btn  { font-size: 12px; color: var(--accent); background: var(--accent-l); border: none; padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer; font-family: var(--sans); width: 100%; margin-top: 4px; }
+.submit-btn   { padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r-md); font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; transition: opacity 0.15s; }
+.submit-btn:hover { opacity: 0.88; }
+
+/* ═══════════════════════════════════════════════════════════
+   OIL PAGE
+═══════════════════════════════════════════════════════════ */
+.oil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 12px 18px 0; }
+.oil-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px; cursor: pointer; transition: all 0.15s; }
+.oil-card:hover  { border-color: var(--accent-m); }
+.oil-card:active { transform: scale(0.97); }
+.oil-card.is-my  { background: rgba(80,85,100,0.07); border-color: rgba(80,85,100,0.15); }
+.oc-icon    { width: 36px; height: 36px; border-radius: 9px; background: #fff; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 17px; margin-bottom: 9px; overflow: hidden; }
+.oc-icon img { width:36px; height:36px; border-radius:9px; object-fit:cover; }
+.oc-footer  { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.myoil-btn  {
+  width: 26px; height: 26px; border-radius: 50%; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; cursor: pointer; flex-shrink: 0;
+  transition: all 0.15s; line-height: 1;
+}
+.myoil-btn.add    { background: var(--accent-l); color: var(--accent); }
+.myoil-btn.add:hover { background: var(--accent); color: #fff; }
+.myoil-btn.remove { background: rgba(80,85,100,0.10); color: var(--text-3); font-size: 18px; font-weight: 400; }
+.myoil-btn.remove:hover { background: rgba(80,85,100,0.18); color: var(--text-2); }
+.oc-name    { font-size: 13px; font-weight: 500; color: var(--text-1); margin-bottom: 2px; }
+.oc-name-en { font-size: 10px; color: var(--text-3); margin-bottom: 8px; }
+
+/* Oil Detail */
+#page-oil-detail { display: none; flex: 1; overflow-y: auto; }
+#page-oil-detail.active { display: block; }
+.oil-detail-hero {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 0 20px;
+}
+.od-topbar {
+  display: flex; justify-content: flex-end;
+  padding: 12px 16px 0;
+}
+.back-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 500; color: var(--accent);
+  background: var(--accent-l); border: none;
+  padding: 7px 14px 7px 10px; border-radius: 20px;
+  cursor: pointer; font-family: var(--sans); transition: all 0.15s;
+}
+.back-pill:hover { background: var(--accent); color: #fff; }
+.back-pill:hover svg { stroke: #fff; }
+.back-pill svg { width: 14px; height: 14px; stroke: var(--accent); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; }
+.od-img-wrap {
+  width: 100%; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 200px; overflow: hidden; margin-top: 10px;
+}
+.od-img-wrap img { width: 100%; max-height: 300px; object-fit: contain; display: block; }
+.od-emoji { font-size: 80px; padding: 40px 0; line-height: 1; }
+.od-info  { padding: 16px 18px 0; }
+.oil-detail-name { font-family: var(--serif); font-size: 28px; color: var(--text-1); margin-bottom: 3px; }
+.oil-detail-en   { font-size: 12px; color: var(--text-3); margin-bottom: 12px; }
+
+/* ═══════════════════════════════════════════════════════════
+   MY PAGE
+═══════════════════════════════════════════════════════════ */
+.my-profile {
+  margin: 18px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 18px; display: flex; align-items: center; gap: 14px;
+}
+.my-avatar {
+  width: 50px; height: 50px; border-radius: 50%;
+  background: var(--accent-l); border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 20px; color: var(--accent);
+  flex-shrink: 0;
+}
+.my-name    { font-size: 16px; font-weight: 500; color: var(--text-1); margin-bottom: 3px; }
+.my-uid     { font-size: 11px; color: var(--text-3); }
+
+.my-section { margin: 0 18px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+.my-row     { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+.my-row:last-child { border-bottom: none; }
+.my-row:hover { background: var(--surface2); }
+.mr-left    { display: flex; align-items: center; gap: 10px; }
+.mr-icon    { width: 30px; height: 30px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.mr-icon.blue  { background: var(--accent-l); }
+.mr-icon.green { background: var(--green-l);  }
+.mr-icon.amber { background: var(--amber-l);  }
+.mr-icon.gray  { background: var(--surface2); }
+.mr-text    { font-size: 13px; color: var(--text-1); }
+.mr-sub     { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.mr-right   { display: flex; align-items: center; gap: 6px; }
+.mr-count   { font-size: 11px; font-weight: 500; color: var(--accent); background: var(--accent-l); padding: 2px 8px; border-radius: 10px; }
+.mr-chevron { font-size: 16px; color: var(--text-3); }
+
+/* My Oils 관리 패널 */
+#my-oils-panel { display: none; }
+#my-oils-panel.active { display: block; }
+.oil-checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 12px 18px; }
+.oil-check-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 9px 11px; cursor: pointer;
+  transition: all 0.12s;
+}
+.oil-check-item.checked { background: var(--green-l); border-color: rgba(78,112,96,0.25); }
+.oil-check-item input { display: none; }
+.oil-check-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--border2); flex-shrink: 0;
+  transition: all 0.12s;
+}
+.oil-check-item.checked .oil-check-dot { background: var(--green); border-color: var(--green); }
+.oil-check-name { font-size: 12px; color: var(--text-1); line-height: 1.3; }
+
+
+/* ── 스켈레톤 로딩 ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--r-sm);
+}
+.sk-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.sk-line  { height: 12px; }
+.sk-line.w-80 { width: 80%; }
+.sk-line.w-60 { width: 60%; }
+.sk-line.w-40 { width: 40%; }
+.sk-circle { width: 36px; height: 36px; border-radius: 50%; }
+.sk-hero { height: 140px; border-radius: var(--r-lg); margin: 14px 18px 0; }
+/* ── 오일 자동완성 ── */
+.oil-autocomplete {
+  position: absolute; left: 0; right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  z-index: 50; overflow: hidden;
+  max-height: 180px; overflow-y: auto;
+}
+.oil-autocomplete::-webkit-scrollbar { width: 0; }
+.oil-ac-item {
+  padding: 10px 14px; font-size: 13px; color: var(--text-1);
+  cursor: pointer; transition: background 0.1s;
+  border-bottom: 1px solid var(--border);
+}
+.oil-ac-item:last-child { border-bottom: none; }
+.oil-ac-item:hover, .oil-ac-item.selected { background: var(--accent-l); color: var(--accent); }
+.oil-field-row { position: relative; }
+
+/* ── Fade-in ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.page.active > *:first-child { animation: fadeUp 0.22s ease forwards; }
+
+/* ── Nickname modal ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: var(--surface); border-radius: var(--r-lg);
+  padding: 24px 22px; width: calc(100% - 48px); max-width: 320px;
+}
+.modal-title { font-size: 15px; font-weight: 500; margin-bottom: 14px; }
+.modal-input { width: 100%; padding: 11px 13px; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r-sm); font-family: var(--sans); font-size: 14px; color: var(--text-1); outline: none; margin-bottom: 12px; }
+.modal-input:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 8px; }
+.modal-btn { flex: 1; padding: 11px; border-radius: var(--r-sm); font-family: var(--sans); font-size: 13px; cursor: pointer; }
+.modal-btn.cancel { background: var(--surface2); border: 1px solid var(--border2); color: var(--text-2); }
+.modal-btn.confirm { background: var(--accent); border: none; color: #fff; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- Loading / Skeleton -->
+<div id="loading">
+  <div class="logo-lg">Aroma <em>Note</em></div>
+  <div class="spinner"></div>
+</div>
+
+<!-- 홈 스켈레톤 (데이터 로드 중 표시) -->
+<div id="skeleton-home" style="display:none;padding-bottom:70px">
+  <div style="padding:18px 18px 0;display:flex;justify-content:space-between;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="skeleton sk-line w-40" style="height:10px"></div>
+      <div class="skeleton sk-line w-60" style="height:18px"></div>
+    </div>
+    <div class="skeleton sk-line w-40" style="height:26px;border-radius:20px"></div>
+  </div>
+  <div class="skeleton sk-hero"></div>
+  <div style="padding:18px 18px 10px">
+    <div class="skeleton sk-line w-40" style="height:12px"></div>
+  </div>
+  <div style="display:flex;gap:10px;padding:0 18px;overflow:hidden">
+    <div class="sk-card" style="flex-shrink:0;width:150px">
+      <div class="skeleton sk-line w-60" style="height:10px"></div>
+      <div class="skeleton sk-line w-80" style="height:13px"></div>
+      <div class="skeleton sk-line w-40" style="height:10px"></div>
+    </div>
+    <div class="sk-card" style="flex-shrink:0;width:150px">
+      <div class="skeleton sk-line w-60" style="height:10px"></div>
+      <div class="skeleton sk-line w-80" style="height:13px"></div>
+      <div class="skeleton sk-line w-40" style="height:10px"></div>
+    </div>
+    <div class="sk-card" style="flex-shrink:0;width:150px">
+      <div class="skeleton sk-line w-60" style="height:10px"></div>
+      <div class="skeleton sk-line w-80" style="height:13px"></div>
+      <div class="skeleton sk-line w-40" style="height:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Login -->
+<div id="login-screen" class="hidden" style="display:none">
+  <div class="login-logo">Aroma <em>Note</em></div>
+  <div class="login-sub">아로마 레시피 & 오일 가이드</div>
+  <div class="login-form">
+    <!-- 탭 -->
+    <div style="display:flex;border-bottom:2px solid var(--border2);margin-bottom:16px">
+      <button id="tab-login" onclick="switchLoginTab('login')"
+        style="flex:1;padding:10px;border:none;background:none;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;transition:all 0.15s">
+        로그인
+      </button>
+      <button id="tab-signup" onclick="switchLoginTab('signup')"
+        style="flex:1;padding:10px;border:none;background:none;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s">
+        가입 신청
+      </button>
+    </div>
+    <input class="login-input" id="uid-input" placeholder="아이디 (영문/숫자)" maxlength="20" autocomplete="username">
+    <input class="login-input" id="pin-input" placeholder="PIN 번호 (4자리)" type="password" maxlength="4" inputmode="numeric" autocomplete="current-password">
+    <button class="login-btn" id="login-submit-btn" onclick="doLogin()">로그인</button>
+    <div class="login-hint" id="login-hint">계정이 없으신가요? 가입 신청 탭을 눌러주세요</div>
+  </div>
+</div>
+
+<!-- Nickname Modal -->
+<div class="modal-backdrop" id="nick-modal">
+  <div class="modal-box">
+    <div class="modal-title">닉네임 변경</div>
+    <input class="modal-input" id="nick-input" placeholder="새 닉네임" maxlength="20">
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeNickModal()">취소</button>
+      <button class="modal-btn confirm" onclick="saveNickname()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">Aroma <em>Note</em></div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="search-btn" onclick="focusSearch()" title="검색">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <div class="avatar-btn" id="avatar-btn" onclick="goTab('mypage')">—</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="page active pb-nav" id="page-home">
+    <div class="home-head">
+      <div>
+        <div class="greeting-sub">안녕하세요</div>
+        <div class="greeting-name" id="greeting-name">—</div>
+      </div>
+      <div class="date-pill" id="date-pill">—</div>
+    </div>
+
+    <!-- 오늘의 오일 -->
+    <div class="ood-card" id="ood-card">
+      <div class="ood-eyebrow">오늘의 오일</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+        <div class="ood-name-ko" id="ood-ko" style="margin-bottom:0">라벤더</div>
+        <div class="ood-name-en" id="ood-en" style="margin-bottom:0">—</div>
+      </div>
+      <div class="ood-desc" id="ood-desc">—</div>
+      <div class="ood-tags"    id="ood-tags"></div>
+      <div class="ood-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+    </div>
+
+    <!-- 오늘의 오일 관련 레시피 -->
+    <div id="ood-recipes-area"></div>
+
+    <!-- 내 오일 추천 -->
+    <div class="section-hd">
+      <h2>내 오일로 만들 수 있어요</h2>
+      <a onclick="goMyOilRecipes()">전체보기 →</a>
+    </div>
+    <div id="recommend-area"></div>
+
+    <!-- 최근 등록 레시피 -->
+    <div class="section-hd">
+      <h2>최근 등록 레시피</h2>
+    </div>
+    <div id="recent-recipes-area"></div>
+
+    <!-- 즐겨찾기 -->
+    <div class="section-hd">
+      <h2>즐겨찾기</h2>
+      <a onclick="goTab('mypage')">전체보기 →</a>
+    </div>
+    <div class="fav-list" id="home-fav-list"></div>
+    <div style="height:8px"></div>
+  </div>
+
+  <!-- RECIPES -->
+  <div class="page pb-nav" id="page-recipes">
+    <div style="display:flex;align-items:center;gap:8px;padding:14px 18px 0">
+      <div class="search-row" style="margin:0;flex:1">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="recipe-search" placeholder="레시피, 오일, 증상 검색..." oninput="onRecipeSearch(this.value)">
+      </div>
+      <button onclick="openAddRecipeForm()" style="flex-shrink:0;height:36px;padding:0 14px;border-radius:20px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);white-space:nowrap">＋ 새 레시피</button>
+    </div>
+    <div style="display:flex;gap:7px;padding:10px 18px 0;overflow-x:auto;scrollbar-width:none">
+      <button class="chip"    id="filter-all-btn"    onclick="setRecipeMode('all',this)">전체</button>
+      <button class="chip on" id="filter-ood-btn"    onclick="setRecipeMode('ood',this)">오늘의 오일</button>
+      <button class="chip"    id="filter-my-btn"     onclick="setRecipeMode('my',this)">보유 오일</button>
+      <button class="chip"    id="filter-mine-btn"   onclick="setRecipeMode('mine',this)">나의 레시피</button>
+      <button class="chip"    id="filter-fav-btn"    onclick="setRecipeMode('fav',this)">즐겨찾기</button>
+    </div>
+    <div class="chip-row" id="category-chips"></div>
+    <div style="padding:8px 18px 0;font-size:12px;color:var(--text-3)">
+      총 <span id="recipe-count-label" style="font-weight:500;color:var(--text-2)">0개</span>
+    </div>
+    <div class="recipe-list" id="recipe-list"></div>
+    <div style="height:8px"></div>
+  </div>
+
+  <!-- RECIPE DETAIL -->
+  <div class="page pb-nav" id="page-recipe-detail">
+    <div class="detail-hero">
+      <div style="position:absolute;top:14px;right:14px;display:flex;flex-direction:row;align-items:center;gap:6px;z-index:2">
+        <button onclick="goBack()" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.18);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <button class="detail-fav-btn" id="d-fav-btn" onclick="toggleFav()">♡</button>
+        <button class="detail-share-btn" id="d-share-btn" onclick="shareRecipe()">
+          <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
+        <button class="detail-share-btn" id="d-capture-btn" onclick="captureRecipe()">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="detail-edit-btn" id="d-edit-btn" onclick="editRecipe()" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </div>
+      <div class="detail-category" id="d-category"></div>
+      <div class="detail-title"    id="d-title"></div>
+      <div class="detail-tags"     id="d-tags"></div>
+    </div>
+    <div class="detail-body">
+      <div class="meta-grid" id="d-meta"></div>
+      <div class="detail-block" id="d-oils-block">
+        <div class="db-label">재료</div>
+        <div class="oils-grid" id="d-oils"></div>
+        <div class="db-text" id="d-base" style="margin-top:10px;font-size:12px;color:var(--text-3)"></div>
+      </div>
+      <div class="detail-block" id="d-make-block">
+        <div class="db-label">만드는 법</div>
+        <div class="db-text" id="d-make"></div>
+      </div>
+      <div class="detail-block">
+        <div class="db-label">사용 방법</div>
+        <div class="db-text" id="d-use"></div>
+      </div>
+      <div class="detail-block" id="d-caution-block" style="display:none">
+        <div class="db-label">주의사항</div>
+        <div class="db-text" id="d-caution"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RECIPE FORM -->
+  <div class="page" id="page-recipe-form">
+    <div class="topbar" style="position:sticky;top:0;z-index:10">
+      <button class="detail-back" style="margin:0" onclick="goBack()">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--text-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <div style="font-size:14px;font-weight:500" id="form-title">레시피 등록</div>
+      <div style="width:34px"></div>
+    </div>
+    <div class="form-body" id="recipe-form-body">
+      <div>
+        <label class="form-label">제목 *</label>
+        <input class="form-input" id="f-title" placeholder="레시피 이름">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="form-label">카테고리</label>
+          <select class="form-select" id="f-category">
+            <option value="">선택</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">세부 카테고리</label>
+          <select class="form-select" id="f-sub-category">
+            <option value="">선택</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="form-label">만드는 방법</label>
+          <select class="form-select" id="f-method">
+            <option value="">선택</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">난이도</label>
+          <select class="form-select" id="f-difficulty">
+            <option value="쉬움">쉬움</option>
+            <option value="보통">보통</option>
+            <option value="어려움">어려움</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">오일 구성</label>
+        <button class="add-oil-btn" onclick="addOilRow()" style="margin-bottom:8px">+ 오일 추가</button>
+        <div class="oil-fields" id="oil-fields">
+          <div class="oil-field-row">
+            <input class="form-input" placeholder="오일명" data-oil="1"
+              oninput="showOilAC(this)" onblur="hideOilAC(this)"
+              onkeydown="handleOilACKey(event,this)" autocomplete="off">
+            <input class="form-input" placeholder="양 (방울)" data-drops="1">
+            <button class="remove-oil-btn" onclick="removeOilRow(this)">×</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">베이스/기타 재료</label>
+        <input class="form-input" id="f-base" placeholder="예: 호호바 오일 10ml, 롤온 용기">
+      </div>
+      <div>
+        <label class="form-label">만드는 법</label>
+        <textarea class="form-textarea" id="f-how-to-make" placeholder="제조 방법을 적어주세요"></textarea>
+      </div>
+      <div>
+        <label class="form-label">사용 방법</label>
+        <textarea class="form-textarea" id="f-how-to-use" placeholder="사용 방법을 적어주세요"></textarea>
+      </div>
+      <div>
+        <label class="form-label">적용 부위</label>
+        <input class="form-input" id="f-apply-area" placeholder="예: 손목, 관자놀이">
+      </div>
+      <div>
+        <label class="form-label">태그</label>
+        <input class="form-input" id="f-tags" placeholder="#두통 #수면 — # 포함하여 작성">
+      </div>
+      <div>
+        <label class="form-label">주의사항</label>
+        <input class="form-input" id="f-caution" placeholder="임산부 주의 등">
+      </div>
+      <div>
+        <label class="form-label">메모</label>
+        <textarea class="form-textarea" id="f-notes" placeholder="추가 메모"></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
+        <input type="checkbox" id="f-private" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">
+        <label for="f-private" style="font-size:13px;color:var(--text-2);cursor:pointer">나만 보기 (비공개 레시피)</label>
+      </div>
+      <button class="submit-btn" onclick="submitRecipe()" id="submit-btn">등록하기</button>
+    </div>
+  </div>
+
+  <!-- OILS -->
+  <div class="page pb-nav" id="page-oils">
+    <div class="search-row" style="margin:14px 18px 0">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="oil-search" placeholder="오일 이름, 효능, 향 검색..." oninput="onOilSearch(this.value)">
+    </div>
+    <div class="chip-row" id="oil-type-chips"></div>
+    <div class="oil-grid" id="oil-grid" style="padding-bottom:12px"></div>
+  </div>
+
+  <!-- OIL DETAIL -->
+  <div class="page pb-nav" id="page-oil-detail">
+    <div class="oil-detail-hero">
+      <div class="od-topbar">
+        <button class="back-pill" onclick="goBack()">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Back
+        </button>
+      </div>
+      <div class="od-img-wrap" id="od-img-wrap"></div>
+      <div class="od-info">
+        <div class="ood-tags" id="od-keywords" style="margin-bottom:10px"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div>
+            <div class="oil-detail-name" id="od-name"></div>
+            <div class="oil-detail-en"   id="od-en"></div>
+          </div>
+          <button id="od-myoil-btn" onclick="toggleMyOilFromDetail()" style="flex-shrink:0;margin-top:6px;padding:7px 14px;border-radius:20px;border:none;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s"></button>
+        </div>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-block" id="od-desc-block">
+        <div class="db-label">설명</div>
+        <div class="db-text" id="od-desc"></div>
+      </div>
+      <div class="detail-block" id="od-benefits-block">
+        <div class="db-label">주요 효능 및 사용방법</div>
+        <div class="db-text" id="od-benefits"></div>
+      </div>
+      <div class="detail-block" id="od-cautions-block">
+        <div class="db-label">주의사항</div>
+        <div class="db-text" id="od-cautions"></div>
+      </div>
+      <div id="od-related-block" style="padding-top:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 18px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <span class="db-label" style="white-space:nowrap;margin-bottom:0">관련 레시피</span>
+            <span id="od-related-count" style="font-size:10px;color:var(--text-3);white-space:nowrap"></span>
+          </div>
+          <div id="od-related-chips" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-left:8px"></div>
+        </div>
+        <div id="od-related-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY PAGE -->
+  <div class="page pb-nav" id="page-mypage">
+    <div class="my-profile">
+      <div class="my-avatar" id="my-avatar">—</div>
+      <div>
+        <div class="my-name" id="my-name">—</div>
+        <div class="my-uid"  id="my-uid-text">—</div>
+      </div>
+    </div>
+
+    <div class="my-section">
+      <div class="my-row" onclick="toggleMyOilsPanel()">
+        <div class="mr-left">
+          <div class="mr-icon blue">💧</div>
+          <div><div class="mr-text">내 오일 관리</div><div class="mr-sub">보유 오일 등록</div></div>
+        </div>
+        <div class="mr-right"><span class="mr-count" id="my-oils-count">0개</span><span class="mr-chevron" id="myoil-chevron">›</span></div>
+      </div>
+      <div id="my-oils-panel">
+        <div class="oil-checkbox-grid" id="oil-checkbox-grid"></div>
+        <div style="padding:0 18px 14px">
+          <button class="submit-btn" onclick="saveMyOils()">저장하기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="my-section">
+      <div class="my-row" onclick="showFavList()">
+        <div class="mr-left">
+          <div class="mr-icon green">♥</div>
+          <div><div class="mr-text">즐겨찾기</div><div class="mr-sub">저장한 레시피</div></div>
+        </div>
+        <div class="mr-right"><span class="mr-count" id="my-fav-count">0개</span><span class="mr-chevron">›</span></div>
+      </div>
+      <div id="my-fav-list-area"></div>
+    </div>
+
+    <div class="my-section" id="my-recipe-section">
+      <div class="my-row" onclick="showMyRecipes()">
+        <div class="mr-left">
+          <div class="mr-icon amber">📝</div>
+          <div><div class="mr-text">내 레시피</div><div class="mr-sub">직접 등록한 레시피</div></div>
+        </div>
+        <div class="mr-right"><span class="mr-count" id="my-recipe-count">0개</span><span class="mr-chevron">›</span></div>
+      </div>
+    </div>
+
+    <div class="my-section">
+      <div class="my-row" onclick="openNickModal()">
+        <div class="mr-left">
+          <div class="mr-icon gray">✏️</div>
+          <div><div class="mr-text">닉네임 변경</div></div>
+        </div>
+        <div class="mr-right"><span class="mr-chevron">›</span></div>
+      </div>
+      <div class="my-row" onclick="openAddRecipeForm()">
+        <div class="mr-left">
+          <div class="mr-icon blue">＋</div>
+          <div><div class="mr-text">레시피 등록하기</div></div>
+        </div>
+        <div class="mr-right"><span class="mr-chevron">›</span></div>
+      </div>
+      <div class="my-row" onclick="doLogout()">
+        <div class="mr-left">
+          <div class="mr-icon gray">🚪</div>
+          <div><div class="mr-text" style="color:var(--text-3)">로그아웃</div></div>
+        </div>
+        <div class="mr-right"><span class="mr-chevron">›</span></div>
+      </div>
+    </div>
+
+    <div style="height:8px"></div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-home"   onclick="goTab('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">홈</span><div class="nav-pip"></div>
+    </button>
+    <button class="nav-item" id="nav-recipes" onclick="goTab('recipes')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span class="nav-label">레시피</span><div class="nav-pip"></div>
+    </button>
+    <button class="nav-item" id="nav-oils" onclick="goTab('oils')">
+      <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      <span class="nav-label">오일</span><div class="nav-pip"></div>
+    </button>
+    <button class="nav-item" id="nav-mypage" onclick="goTab('mypage')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">마이</span><div class="nav-pip"></div>
+    </button>
+  </nav>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+//  API 설정 — GAS 웹앱 URL
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxqPHtc7cpGUZ8WLwKhr2TKIyscFCR0d7vZ7nVrU-r7jLYrVuuX-F6rv4cLpYhmcLLK/exec';
+
+// ============================================================
+//  오늘의 오일 데이터 (로컬)
+// ============================================================
+const OIL_OF_DAY = [
+  { ko:'라벤더',     en:'Lavender',      desc:'긴장 완화와 수면 개선에 탁월해요. 확산기에 3~4방울, 취침 전 목덜미에 희석 도포하면 좋아요.',          tags:['긴장완화','수면','스트레스'] },
+  { ko:'페퍼민트',   en:'Peppermint',    desc:'두통 완화와 집중력 향상에 도움을 줘요. 관자놀이에 소량 도포하거나 손에 비빈 후 흡입해보세요.',       tags:['두통','집중력','소화'] },
+  { ko:'레몬',       en:'Lemon',         desc:'기분 전환과 공기 정화에 좋아요. 물 한 잔에 한 방울 넣어 마시면 해독 효과를 기대할 수 있어요.',        tags:['정화','기분전환','면역'] },
+  { ko:'프랑킨센스', en:'Frankincense',  desc:'명상과 집중, 피부 재생에 활용돼요. 모든 오일의 왕으로 불리며 다른 오일의 효과를 높여줘요.',           tags:['명상','피부재생','면역'] },
+  { ko:'유칼립투스', en:'Eucalyptus',    desc:'호흡기 건강에 특히 좋아요. 코막힘이나 기침 시 흡입하거나 가슴에 희석 도포해보세요.',                 tags:['호흡기','코막힘','항균'] },
+  { ko:'베르가못',   en:'Bergamot',      desc:'기분을 밝게 하고 불안을 줄여줘요. 감귤과 플로럴이 섞인 향이 공간을 상쾌하게 만들어요.',               tags:['기분','불안','항우울'] },
+  { ko:'시더우드',   en:'Cedarwood',     desc:'땅의 기운이 느껴지는 깊은 나무 향이에요. 수면 유도와 아이들 진정에도 효과적이에요.',                  tags:['수면','진정','집중'] },
+  { ko:'티트리',     en:'Tea Tree',      desc:'강력한 항균·항바이러스 효과를 가져요. 피부 트러블, 상처 소독에 두루 활용해보세요.',                   tags:['항균','피부트러블','살균'] },
+  { ko:'온가드',     en:'On Guard',      desc:'면역력을 지켜주는 보호 블렌드예요. 감기 계절에 확산하거나 발바닥에 도포하면 좋아요.',                  tags:['면역','감기예방','항균'] },
+  { ko:'딥블루',     en:'Deep Blue',     desc:'근육과 관절 통증 완화에 탁월한 블렌드예요. 운동 후 뭉친 부위에 마사지해 보세요.',                     tags:['근육통','관절','통증완화'] },
 ];
 
-// ── 시트 이름 상수 ──────────────────────────────────────────
-const SHEETS = {
-  RECIPES   : 'recipes',
-  OILS      : 'oils',
-  CATEGORIES: 'categories',
-  USER_LIST : 'userList',
-  USERS_OIL : 'usersOil',
+// ============================================================
+//  상태
+// ============================================================
+const ADMIN_UIDS = ['ohu']; // 모든 레시피 볼 수 있는 관리자
+
+let state = {
+  user        : null,
+  recipes     : [],
+  oils        : [],
+  categories  : {},
+  page        : 'home',
+  prevPage    : null,
+  editRecipeId: null,
+  oilImages   : {},
+  recipeMode  : 'ood',  // 'ood' | 'all' | 'my' | 'mine' | 'fav'
+  myRecipeMode: false,  // 내 레시피만 보기
 };
 
-// ── JSON 응답 (GAS ContentService는 커스텀 헤더 미지원) ────────
-// GAS 웹앱은 "모든 사용자" 설정 시 CORS를 자동 허용함
-function jsonResponse(data) {
-  const output = ContentService.createTextOutput(JSON.stringify(data));
-  output.setMimeType(ContentService.MimeType.JSON);
-  return output;
+// ============================================================
+//  API — GET 방식으로 통일 (GAS CORS 호환)
+//  데이터가 많으면 data 파라미터에 JSON으로 인코딩
+// ============================================================
+async function api(params, method='GET', body=null) {
+  const merged = method === 'POST' ? { ...body, ...params } : params;
+  try {
+    // action만 URL에, 나머지는 data 파라미터로 JSON 인코딩
+    const { action, ...rest } = merged;
+    const dataStr = encodeURIComponent(JSON.stringify(rest));
+    const url = GAS_URL + '?action=' + action + '&data=' + dataStr;
+    const res = await fetch(url, { redirect: 'follow' });
+    return await res.json();
+  } catch(e) {
+    console.error('API 오류:', e);
+    return { success: false, error: e.message };
+  }
 }
 
-// ── 소유자 실행 방식: 이메일 인증 불필요 ────────────────────
+// ============================================================
+//  초기화
+// ============================================================
+async function init() {
+  // 1. 공유 링크로 접속한 경우 — 로그인 없이 레시피만 표시
+  const params = new URLSearchParams(location.search);
+  const sharedRecipeId = params.get('recipe');
+  if (sharedRecipeId) {
+    await loadSharedRecipe(sharedRecipeId);
+    return;
+  }
 
-// ── GET 라우터 ───────────────────────────────────────────────
-function doGet(e) {
-  const action = e.parameter.action || '';
-  // data 파라미터로 JSON 전송된 경우 파싱
-  let p = e.parameter;
-  if (p.data) {
+  // 2. 저장된 세션 확인
+  const saved = localStorage.getItem('an_user');
+  if (saved) {
+    state.user = JSON.parse(saved);
+    await afterLogin();
+    return;
+  }
+
+  // 3. 세션 없으면 바로 로그인 화면 (캐시 렌더 없이)
+  hideLoading();
+  showLoginScreen();
+}
+
+async function loadSharedRecipe(recipeId) {
+  // URL 파라미터 제거
+  history.replaceState({}, '', location.pathname);
+
+  // 데이터 로드 (로그인 없이)
+  try {
+    const r = await api({ action: 'getInitialData' });
+    if (r && r.success) {
+      state.recipes   = (r.recipes || []).reverse();
+      state.oils      = r.oils      || [];
+      state.oilImages = r.oilImages || {};
+    }
+  } catch(e) {}
+
+  hideLoading();
+
+  const recipe = state.recipes.find(x => x.id === recipeId);
+  if (!recipe) {
+    toast('레시피를 찾을 수 없어요');
+    showLoginScreen();
+    return;
+  }
+
+  // 탑바 액션(검색, 아바타) 숨기기
+  document.querySelector('.topbar-actions').style.display = 'none';
+  // 하단 탭 숨기기
+  document.querySelector('.bottom-nav').style.display = 'none';
+
+  // 레시피 상세 열기
+  openRecipeDetail(recipeId);
+
+  // 상세 버튼들 숨기기 (back, 즐겨찾기, 공유, 캡쳐)
+  setTimeout(() => {
+    const btnArea = document.querySelector('#page-recipe-detail .detail-hero > div[style*="absolute"]');
+    if (btnArea) btnArea.style.display = 'none';
+  }, 50);
+
+  // 하단 로그인 유도 배너
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:var(--accent);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;z-index:50;';
+  banner.innerHTML = '<span style="font-size:13px">로그인하면 모든 기능을 사용할 수 있어요</span><button onclick="location.reload()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:var(--sans)">로그인</button>';
+  document.body.appendChild(banner);
+}
+
+function checkSharedRecipe() {
+  // init()에서 처리됨
+}
+
+function renderAll() {
+  renderHome();
+  renderRecipePage();
+  renderOilPage();
+  renderMyPage();
+}
+
+async function afterLogin() {
+  updateTopbar();
+
+  // ── 캐시 있으면 즉시 렌더 ──
+  const cached = localStorage.getItem('an_cache');
+  if (cached) {
     try {
-      const parsed = JSON.parse(decodeURIComponent(p.data));
-      p = { ...p, ...parsed };
-    } catch(err) {}
+      const c = JSON.parse(cached);
+      if (c.categories) state.categories = c.categories;
+      if (c.oils)       state.oils       = c.oils;
+      if (c.recipes)    state.recipes    = c.recipes;
+      if (c.oilImages)  state.oilImages  = c.oilImages;
+    } catch(e) {}
+    renderAll();  // 먼저 렌더
+    hideLoading();  // 그 다음 로딩 숨기기 (깜빡임 방지)
+    loadAllData();  // 백그라운드 갱신
+    return;
   }
 
-  // action 없으면 상태 확인용 응답
-  if (!action) {
-    return jsonResponse({ success: true, message: 'Aroma Note API', version: '1.0' });
-  }
+  // ── 캐시 없음: 로딩 표시 후 데이터 fetch ──
+  showSkeleton();
+  await loadAllData();
+  hideSkeleton();
+  hideLoading();
+  renderAll();
+}
+
+async function loadAllData() {
+  // 유저 데이터 — localStorage의 my_oils를 우선 유지
+  try {
+    if (state.user) {
+      const localMyOils = [...(state.user.my_oils || [])]; // 현재 로컬 상태 보존
+      const r = await api({ action:'getUserData', uid: state.user.uid });
+      if (r && r.success) {
+        state.user.favorites = r.data.favorites || [];
+        // my_oils는 로컬이 더 최신일 수 있으므로 로컬 우선
+        // 단, 로컬이 비어있으면 서버 데이터 사용
+        state.user.my_oils   = localMyOils.length > 0 ? localMyOils : (r.data.my_oils || []);
+        state.user.nickname  = r.data.nickname  || state.user.nickname;
+        localStorage.setItem('an_user', JSON.stringify(state.user));
+        updateTopbar();
+      }
+    }
+  } catch(e) { console.warn('유저 데이터 로드 실패', e); }
+
+  // 전체 데이터 한번에
+  try {
+    const r = await api({ action:'getInitialData' });
+    if (r && r.success) {
+      state.categories = r.categories || {};
+      state.oils       = r.oils       || [];
+      state.recipes    = (r.recipes || []).reverse();
+      state.oilImages  = r.oilImages  || {};
+      localStorage.setItem('an_cache', JSON.stringify({
+        categories: state.categories,
+        oils      : state.oils,
+        recipes   : state.recipes,
+        oilImages : state.oilImages,
+        cachedAt  : Date.now(),
+      }));
+      renderAll();
+    }
+  } catch(e) { console.warn('전체 데이터 로드 실패', e); }
+}
+
+function hideLoading() {
+  const el = document.getElementById('loading');
+  el.classList.add('hidden');
+  setTimeout(() => el.style.display = 'none', 300);
+}
+
+function showSkeleton() {
+  const sk = document.getElementById('skeleton-home');
+  if (!sk) return;
+  sk.style.display = 'block';
+  // 홈 페이지 내용 위에 absolute로 덮기
+  sk.style.cssText = 'display:block;position:absolute;top:54px;left:0;right:0;bottom:62px;background:var(--bg);z-index:5;overflow-y:auto;padding-bottom:70px';
+  document.getElementById('app').appendChild(sk);
+  hideLoading();
+}
+
+function hideSkeleton() {
+  const sk = document.getElementById('skeleton-home');
+  if (!sk) return;
+  sk.style.display = 'none';
+}
+
+function showLoginScreen() {
+  const el = document.getElementById('login-screen');
+  el.style.display = 'flex';
+  setTimeout(() => el.classList.remove('hidden'), 10);
+}
+
+// ============================================================
+//  로그인 / 로그아웃
+// ============================================================
+function switchLoginTab(tab) {
+  const isLogin = tab === 'login';
+  const loginTab  = document.getElementById('tab-login');
+  const signupTab = document.getElementById('tab-signup');
+  const submitBtn = document.getElementById('login-submit-btn');
+  const hint      = document.getElementById('login-hint');
+
+  loginTab.style.color        = isLogin ? 'var(--accent)' : 'var(--text-3)';
+  loginTab.style.borderBottom = isLogin ? '2px solid var(--accent)' : '2px solid transparent';
+  signupTab.style.color        = isLogin ? 'var(--text-3)' : 'var(--accent)';
+  signupTab.style.borderBottom = isLogin ? '2px solid transparent' : '2px solid var(--accent)';
+
+  submitBtn.textContent = isLogin ? '로그인' : '가입 신청';
+  submitBtn.onclick     = isLogin ? doLogin : doSignup;
+  hint.textContent = isLogin
+    ? '계정이 없으신가요? 가입 신청 탭을 눌러주세요'
+    : '아이디와 PIN을 입력하고 가입을 신청하세요. 관리자 승인 후 이용 가능합니다.';
+}
+
+async function doSignup() {
+  const uid = document.getElementById('uid-input').value.trim();
+  const pin = document.getElementById('pin-input').value.trim();
+  if (!uid || uid.length < 2) return toast('아이디를 2자 이상 입력해주세요');
+  if (!/^\d{4}$/.test(pin))   return toast('PIN은 숫자 4자리로 입력해주세요');
+
+  const btn  = document.getElementById('login-submit-btn');
+  const hint = document.getElementById('login-hint');
+
+  // 로딩 상태
+  btn.disabled    = true;
+  btn.textContent = '신청 중...';
+  hint.textContent = '잠시만 기다려주세요...';
 
   try {
-    switch (action) {
-      // ── GET 액션 ──
-      case 'getInitialData' : return jsonResponse(getInitialData());
-      case 'getRecipes'     : return jsonResponse(getRecipes(p));
-      case 'getRecipe'      : return jsonResponse(getRecipe(p.id));
-      case 'getOils'        : return jsonResponse(getOils());
-      case 'getOil'         : return jsonResponse(getOil(p.key));
-      case 'getOilImages'   : return jsonResponse(getOilImages());
-      case 'getCategories'  : return jsonResponse(getCategories());
-      case 'getUserData'    : return jsonResponse(getUserData(p.uid));
-      case 'searchRecipes'  : return jsonResponse(searchRecipes(p.q, p));
-      // ── POST 액션 (GET으로 통합) ──
-      case 'login'          : return jsonResponse(loginUser(p));
-      case 'addRecipe'      : return jsonResponse(addRecipe(p));
-      case 'updateRecipe'   : return jsonResponse(updateRecipe(p));
-      case 'saveUserData'   : return jsonResponse(saveUserData(p));
-      case 'toggleFavorite' : return jsonResponse(toggleFavorite(p));
-      case 'updateMyOils'   : return jsonResponse(updateMyOilsFromGet(p));
-      default:
-        return jsonResponse({ success: false, error: 'Unknown action: ' + action });
+    const r = await api({ action:'login' }, 'POST', { uid, pin, isSignup: true });
+
+    if (r.isPending) {
+      document.getElementById('uid-input').value = '';
+      document.getElementById('pin-input').value = '';
+      hint.innerHTML = '✅ 가입 신청이 완료됐어요!<br>관리자 승인 후 로그인할 수 있어요.';
+      btn.textContent = '신청 완료';
+      return;
     }
-  } catch (err) {
-    return jsonResponse({ success: false, error: err.toString() });
+    if (!r.success) {
+      hint.textContent = '가입 신청 탭에서 아이디와 PIN을 입력하고 신청하세요.';
+      btn.disabled    = false;
+      btn.textContent = '가입 신청';
+      if (r.error === 'notfound') {
+        toast('이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요');
+      } else {
+        toast(r.message || r.error || '오류가 발생했어요');
+      }
+    }
+  } catch(e) {
+    hint.textContent = '오류가 발생했어요. 다시 시도해주세요.';
+    btn.disabled    = false;
+    btn.textContent = '가입 신청';
+    toast('오류가 발생했어요');
   }
 }
 
-// ── POST 라우터 ──────────────────────────────────────────────
-function doPost(e) {
-  const body   = JSON.parse(e.postData.contents);
-  const action = body.action || '';
+async function doLogin() {
+  const uid = document.getElementById('uid-input').value.trim();
+  const pin = document.getElementById('pin-input').value.trim();
+  if (!uid || uid.length < 2) return toast('아이디를 2자 이상 입력해주세요');
+  if (!/^\d{4}$/.test(pin))   return toast('PIN은 숫자 4자리로 입력해주세요');
+
+  const r = await api({ action:'login' }, 'POST', { uid, pin, isSignup: false });
+  if (!r.success) {
+    toast(r.message || (r.error === 'pending' ? '승인 대기 중이에요' : r.error === 'notfound' ? '등록되지 않은 아이디예요' : '로그인 실패'));
+    return;
+  }
+
+  state.user = {
+    uid      : r.uid,
+    nickname : r.nickname || r.uid,
+    favorites: r.favorites ? r.favorites.split(',').filter(Boolean) : [],
+    my_oils  : [],
+  };
+  localStorage.setItem('an_user', JSON.stringify(state.user));
+
+  document.getElementById('login-screen').classList.add('hidden');
+  setTimeout(() => document.getElementById('login-screen').style.display = 'none', 300);
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('loading').classList.remove('hidden');
+
+  await afterLogin();
+  checkSharedRecipe();
+}
+
+function doLogout() {
+  if (!confirm('로그아웃 할까요?')) return;
+  localStorage.removeItem('an_user');
+  state.user = null;
+  showLoginScreen();
+  document.getElementById('uid-input').value = '';
+  document.getElementById('pin-input').value = '';
+}
+
+// ============================================================
+//  데이터 로드
+// ============================================================
+async function loadCategories() {
+  const r = await api({ action:'getCategories' });
+  if (r.success) state.categories = r.data;
+}
+
+async function loadOils() {
+  const r = await api({ action:'getOils' });
+  if (r.success) state.oils = r.data;
+}
+
+async function loadOilImages() {
+  const r = await api({ action:'getOilImages' });
+  if (r.success) state.oilImages = r.data;
+}
+
+async function loadRecipes(params={}) {
+  const r = await api({ action:'getRecipes', limit:9999, ...params });
+  if (r.success) state.recipes = (r.data || []).reverse();
+}
+
+async function loadUserData() {
+  if (!state.user) return;
+  try {
+    const r = await api({ action:'getUserData', uid: state.user.uid });
+    if (r && r.success) {
+      state.user.favorites = r.data.favorites || [];
+      state.user.my_oils   = r.data.my_oils   || [];
+      state.user.nickname  = r.data.nickname  || state.user.nickname;
+      localStorage.setItem('an_user', JSON.stringify(state.user));
+    }
+  } catch(e) {}
+}
+
+// ============================================================
+//  UI 업데이트
+// ============================================================
+function updateTopbar() {
+  const nick = state.user?.nickname || '—';
+  const init = nick.charAt(0).toUpperCase();
+  document.getElementById('avatar-btn').textContent = init;
+}
+
+// ── HOME ────────────────────────────────────────────────────
+function renderHome() {
+  if (!state.user) return;
+  const nick = state.user.nickname || state.user.uid;
+  const greetEl = document.getElementById('greeting-name');
+  greetEl.textContent = nick + '님';
+  // 이메일 형태면 작은 글씨
+  if (nick.includes('@')) {
+    greetEl.classList.add('is-email');
+  } else {
+    greetEl.classList.remove('is-email');
+  }
+
+  const now  = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('date-pill').textContent =
+    (now.getMonth()+1) + '월 ' + now.getDate() + '일 ' + days[now.getDay()] + '요일';
+
+  // 오늘의 오일 (날짜 시드)
+  const idx = (now.getFullYear()*500 + now.getMonth()*31 + now.getDate()) % OIL_OF_DAY.length;
+  const oil = OIL_OF_DAY[idx];
+  document.getElementById('ood-ko').textContent   = oil.ko;
+  document.getElementById('ood-en').textContent   = oil.en;
+  document.getElementById('ood-desc').textContent = oil.desc;
+  document.getElementById('ood-tags').innerHTML   = oil.tags.map(t => `<span class="ood-tag">${t}</span>`).join('');
+  document.getElementById('ood-card').onclick = () => {
+    const found = state.oils.find(o => o.name_ko === oil.ko);
+    if (found) {
+      openOilDetail(found, 'home'); // 홈에서 온 것 명시
+    } else {
+      goTab('oils');
+    }
+  };
+
+  // 오늘의 오일 관련 레시피
+  renderOodRecipes(oil.ko);
+
+  // 내 오일 추천
+  renderRecommend();
+
+  // 최근 등록 레시피
+  renderRecentRecipes();
+
+  // 즐겨찾기
+  renderHomeFav();
+}
+
+function renderRecommend() {
+  const area = document.getElementById('recommend-area');
+  if (!area) return;
+  const myOils = state.user?.my_oils || [];
+
+  if (!myOils.length) {
+    area.innerHTML = `<div class="empty-box"><p>아직 내 오일이 없어요.<br>오일을 등록하면 딱 맞는 레시피를 추천해드려요!</p><button class="setup-btn" onclick="goTab('mypage')">오일 등록하러 가기 →</button></div>`;
+    return;
+  }
+
+  const myOilsLower = myOils.map(o => o.toLowerCase());
+  const allMatched = state.recipes.filter(r => {
+    if (!r.oils_list) return false;
+    const rOils = r.oils_list.split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
+    return rOils.length > 0 && rOils.every(o => myOilsLower.includes(o));
+  });
+
+  if (!allMatched.length) {
+    area.innerHTML = `<div class="empty-box"><p>현재 오일로 만들 수 있는 레시피를 찾는 중이에요.</p></div>`;
+    return;
+  }
+
+  // 랜덤 3개
+  const picked = [...allMatched].sort(() => Math.random() - 0.5).slice(0, 3);
+  area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">${picked.map(r => `
+    <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
+      <div class="rm-method">${r.category||r.method||''}</div>
+      <div class="rm-title">${r.title}</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
+    </div>`).join('')}</div>`;
+}
+
+function renderOodRecipes(oilName) {
+  const area = document.getElementById('ood-recipes-area');
+  if (!area) return;
+  if (!oilName || !state.recipes.length) {
+    area.innerHTML = '';
+    return;
+  }
+
+  // 오늘의 오일이 포함된 레시피 필터
+  const matched = state.recipes.filter(r =>
+    r.oils_list && r.oils_list.split(',').map(o => o.trim()).includes(oilName)
+  );
+
+  if (!matched.length) {
+    area.innerHTML = `
+      <div class="section-hd" style="padding-top:14px">
+        <h2>${oilName} 활용 레시피</h2>
+      </div>
+      <div class="empty-box" style="margin:0 18px">
+        <p>${oilName}이(가) 사용된 등록된 레시피가 없어요.</p>
+      </div>`;
+    return;
+  }
+
+  // 랜덤 3개
+  const picked = [...matched].sort(() => Math.random() - 0.5).slice(0, 3);
+
+  area.innerHTML = `
+    <div class="section-hd" style="padding-top:14px">
+      <h2>${oilName} 활용 레시피</h2>
+      <a onclick="goOodRecipes()" style="font-size:12px;color:var(--accent)">전체보기 →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">
+      ${picked.map(r => `
+        <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}','home')">
+          <div class="rm-method">${r.category||r.method||''}</div>
+          <div class="rm-title">${r.title}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderRecentRecipes() {
+  const area = document.getElementById('recent-recipes-area');
+  if (!area || !state.recipes.length) return;
+
+  // recipe_id가 USR로 시작하면 사용자 등록, 숫자 ID는 원본 데이터
+  // 전체 레시피에서 마지막 3개 (시트 기준 최근 등록순)
+  // 맨 앞이 최근 등록순 (등록 시 unshift 방식)
+  const recent = state.recipes.slice(0, 3);
+
+  area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px">
+    ${recent.map(r => `
+      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}','home')">
+        <div class="rm-method">${r.category||r.method||''}</div>
+        <div class="rm-title">${r.title}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderHomeFav() {
+  const el = document.getElementById('home-fav-list');
+  const favIds = state.user?.favorites || [];
+  if (!favIds.length) {
+    el.innerHTML = `<div style="padding:0 18px 4px"><div class="empty-box"><p>즐겨찾기한 레시피가 없어요.<br>레시피에서 ♡를 눌러 저장해보세요!</p></div></div>`;
+    return;
+  }
+  const favs = favIds.map(id => state.recipes.find(r => r.id === id)).filter(Boolean).slice(0,3);
+  el.innerHTML = favs.map(r => `
+    <div class="fav-item" onclick="openRecipeDetail('${r.id}','home')">
+      <div>
+        <div class="fi-title">${r.title}</div>
+        <div class="fi-sub">${r.method||''} · ${r.category||''}</div>
+      </div>
+      <div class="fi-heart">♥</div>
+    </div>`).join('');
+}
+
+// ── RECIPES ─────────────────────────────────────────────────
+function renderRecipePage() {
+  const cats = ['전체', ...new Set(state.recipes.map(r => r.category).filter(Boolean))];
+  const chipsEl = document.getElementById('category-chips');
+  chipsEl.innerHTML = cats.map((c,i) =>
+    `<button class="chip${i===0?' on':''}" onclick="filterRecipes('${c}',this)">${c}</button>`
+  ).join('');
+  renderRecipeList();
+}
+
+function goOodRecipes() {
+  // 오늘의 오일 이름 가져오기
+  const oilName = document.getElementById('ood-ko').textContent;
+  if (!oilName) { goTab('recipes'); return; }
+  state._oodFilter = oilName;
+  goTab('recipes');
+  setTimeout(() => {
+    // 검색창에 오늘의 오일명 입력
+    const searchEl = document.getElementById('recipe-search');
+    if (searchEl) {
+      searchEl.value = oilName;
+      onRecipeSearch(oilName);
+    }
+    // 오늘의 오일 모드로
+    setRecipeMode('ood', document.getElementById('filter-ood-btn'));
+  }, 50);
+}
+
+function goMyOilRecipes() {
+  goTab('recipes');
+  setTimeout(() => {
+    setRecipeMode('my', document.getElementById('filter-my-btn'));
+  }, 50);
+}
+
+function setRecipeMode(mode, el) {
+  state.recipeMode = mode;
+  document.getElementById('filter-ood-btn').classList.toggle('on', mode === 'ood');
+  document.getElementById('filter-all-btn').classList.toggle('on', mode === 'all');
+  document.getElementById('filter-my-btn').classList.toggle('on', mode === 'my');
+  document.getElementById('filter-mine-btn').classList.toggle('on', mode === 'mine');
+  document.getElementById('filter-fav-btn').classList.toggle('on', mode === 'fav');
+  _activeCategoryFilter = '전체';
+  document.querySelectorAll('#category-chips .chip').forEach((c,i) => c.classList.toggle('on', i===0));
+  document.getElementById('recipe-search').value = '';
+  renderRecipeList('', '전체');
+}
+
+function renderRecipeList(filter='', categoryFilter='전체') {
+  const el = document.getElementById('recipe-list');
+  const uid = state.user?.uid || '';
+  const isAdmin = ADMIN_UIDS.includes(uid);
+  // 가나다 순 정렬
+  let list = [...state.recipes].sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+  // private 필터링 — 본인 + 관리자만 볼 수 있음
+  list = list.filter(r => {
+    if (!r.private || r.private === 'false') return true;
+    return isAdmin || (r.source || '').trim() === uid.trim();
+  });
+
+  // 보유 오일 레시피 모드
+  if (state.recipeMode === 'my') {
+    const myOilsLower = (state.user?.my_oils || []).map(o => o.toLowerCase());
+    list = list.filter(r => {
+      if (!r.oils_list) return false;
+      const rOils = r.oils_list.split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
+      return rOils.length > 0 && rOils.every(o => myOilsLower.includes(o));
+    });
+  }
+
+  // 나의 레시피 모드
+  if (state.recipeMode === 'mine') {
+    const myUid = state.user?.uid || '';
+    list = list.filter(r => (r.source || '').trim() === myUid.trim());
+  }
+
+  // 즐겨찾기 모드
+  if (state.recipeMode === 'fav') {
+    const favIds = new Set(state.user?.favorites || []);
+    list = list.filter(r => favIds.has(r.id));
+  }
+
+  // 오늘의 오일 모드
+  if (state.recipeMode === 'ood') {
+    const oilName = document.getElementById('ood-ko').textContent || '';
+    if (oilName) {
+      list = list.filter(r =>
+        r.oils_list && r.oils_list.split(',').map(o => o.trim()).includes(oilName)
+      );
+    }
+  }
+
+  if (categoryFilter && categoryFilter !== '전체')
+    list = list.filter(r => r.category === categoryFilter);
+  if (filter)
+    list = list.filter(r =>
+      (r.title+r.oils_list+r.tags+r.category).toLowerCase().includes(filter.toLowerCase())
+    );
+  // 개수 표시
+  const countEl = document.getElementById('recipe-count-label');
+  if (countEl) countEl.textContent = list.length + '개';
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-box" style="margin:0 18px"><p>검색 결과가 없어요.</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(r => `
+    <div class="rl-item" onclick="openRecipeDetail('${r.id}')">
+      <div class="rl-top">
+        <div class="rl-title">${r.title}</div>
+        <span class="badge badge-blue">${r.method||''}</span>
+      </div>
+      <div class="rl-meta">
+        <span>${r.category||''}</span>
+        ${r.sub_category ? `<span>${r.sub_category}</span>` : ''}
+        <span>${r.difficulty||''}</span>
+      </div>
+      ${r.oils_list ? `<div class="oil-tags">${r.oils_list.split(',').slice(0,4).map(o=>`<span class="oil-tag">${o.trim()}</span>`).join('')}</div>` : ''}
+    </div>`).join('');
+}
+
+let _recipeSearchTimer;
+let _activeCategoryFilter = '전체';
+function onRecipeSearch(q) {
+  clearTimeout(_recipeSearchTimer);
+  _recipeSearchTimer = setTimeout(() => renderRecipeList(q, _activeCategoryFilter), 250);
+}
+
+function filterRecipes(cat, el) {
+  _activeCategoryFilter = cat;
+  document.querySelectorAll('#category-chips .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  renderRecipeList(document.getElementById('recipe-search').value, cat);
+}
+
+// ── RECIPE DETAIL ────────────────────────────────────────────
+function openRecipeDetail(id, fromPage) {
+  const r = state.recipes.find(x => x.id === id);
+  if (!r) return;
+
+  // fromPage가 명시되면 사용, 아니면 현재 활성 탭
+  if (fromPage) {
+    state.prevPage = fromPage;
+  } else {
+    const activeNavR = document.querySelector('.nav-item.active');
+    state.prevPage = activeNavR ? activeNavR.id.replace('nav-', '') : state.page;
+  }
+  const isFav = (state.user?.favorites||[]).includes(id);
+
+  document.getElementById('d-category').textContent = [r.category, r.sub_category].filter(Boolean).join(' · ');
+  document.getElementById('d-title').textContent    = r.title;
+  document.getElementById('d-fav-btn').textContent  = isFav ? '♥' : '♡';
+  document.getElementById('d-fav-btn').dataset.id   = id;
+  document.getElementById('d-tags').innerHTML = r.tags ? r.tags.split(' ').map(t=>`<span class="detail-tag">${t}</span>`).join('') : '';
+
+  // 메타
+  document.getElementById('d-meta').innerHTML = [
+    r.method     ? `<div class="meta-item"><div class="meta-key">방법</div><div class="meta-val">${r.method}</div></div>` : '',
+    r.difficulty ? `<div class="meta-item"><div class="meta-key">난이도</div><div class="meta-val">${r.difficulty}</div></div>` : '',
+    r.apply_area ? `<div class="meta-item"><div class="meta-key">적용 부위</div><div class="meta-val">${r.apply_area}</div></div>` : '',
+    r.internal_safe ? `<div class="meta-item"><div class="meta-key">섭취</div><div class="meta-val">${r.internal_safe}</div></div>` : '',
+  ].join('');
+
+  // 오일 — 공백/대소문자 모두 정규화해서 비교
+  const myOilSet = new Set(
+    (state.user?.my_oils || []).map(o => o.trim().replace(/\s+/g, ' '))
+  );
+  console.log('내 오일:', [...myOilSet]);
+  document.getElementById('d-oils').innerHTML = r.oils.map(o => {
+    const oilName = (o.oil || '').trim().replace(/\s+/g, ' ');
+    const have = myOilSet.size > 0 && myOilSet.has(oilName);
+    console.log(`${oilName}: ${have ? '보유' : '미보유'}`);
+    return `<div class="oil-row${have ? '' : ' oil-row-missing'}">
+      <span class="oil-row-name">${o.oil}${have ? '' : ' <span class="no-oil-badge">미보유</span>'}</span>
+      <span class="oil-row-drops">${o.drops}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('d-base').textContent = r.base_materials ? '+ ' + r.base_materials : '';
+
+  document.getElementById('d-make').textContent = r.how_to_make || '—';
+  document.getElementById('d-use').textContent  = r.how_to_use  || '—';
+
+  if (r.caution) {
+    document.getElementById('d-caution').textContent = r.caution;
+    document.getElementById('d-caution-block').style.display = 'block';
+  } else {
+    document.getElementById('d-caution-block').style.display = 'none';
+  }
+
+  // 본인 레시피면 수정 버튼 표시
+  const editBtn = document.getElementById('d-edit-btn');
+  if (editBtn) {
+    const isOwner = r.source && r.source.trim() === (state.user?.uid || '').trim();
+    editBtn.style.display = isOwner ? 'flex' : 'none';
+  }
+
+  showPage('page-recipe-detail');
+}
+
+function editRecipe() {
+  const id = document.getElementById('d-fav-btn').dataset.id;
+  const r  = state.recipes.find(x => x.id === id);
+  if (!r) return;
+
+  state.editRecipeId = id;
+  document.getElementById('form-title').textContent = '레시피 수정';
+  document.getElementById('submit-btn').textContent = '수정하기';
+
+  // 폼 채우기
+  populateFormSelects();
+  document.getElementById('f-title').value        = r.title || '';
+  document.getElementById('f-category').value     = r.category || '';
+  document.getElementById('f-sub-category').value = r.sub_category || '';
+  document.getElementById('f-method').value       = r.method || '';
+  document.getElementById('f-difficulty').value   = r.difficulty || '쉬움';
+  document.getElementById('f-base').value         = r.base_materials || '';
+  document.getElementById('f-how-to-make').value  = r.how_to_make || '';
+  document.getElementById('f-how-to-use').value   = r.how_to_use || '';
+  document.getElementById('f-apply-area').value   = r.apply_area || '';
+  document.getElementById('f-tags').value         = r.tags || '';
+  document.getElementById('f-caution').value      = r.caution || '';
+  document.getElementById('f-notes').value        = r.notes || '';
+  document.getElementById('f-private').checked   = r.private === 'true' || r.private === true;
+
+  // 오일 필드 채우기 (역순 — 추가 버튼이 위에서 추가하므로)
+  const oilContainer = document.getElementById('oil-fields');
+  oilContainer.innerHTML = '';
+  const oils = [...r.oils].reverse();
+  oils.forEach((o, i) => {
+    const n = i + 1;
+    const div = document.createElement('div');
+    div.className = 'oil-field-row';
+    div.innerHTML = makeOilFieldRow(n);
+    oilContainer.appendChild(div);
+    div.querySelector('[data-oil]').value   = o.oil   || '';
+    div.querySelector('[data-drops]').value = o.drops || '';
+  });
+
+  state.prevPage = state.page;
+  showPage('page-recipe-form');
+}
+
+async function captureRecipe() {
+  const title = document.getElementById('d-title').textContent || '레시피';
+  const btn   = document.getElementById('d-capture-btn');
+
+  btn.style.opacity = '0.5';
+  btn.style.pointerEvents = 'none';
+  toast('이미지 저장 중...');
 
   try {
-    switch (action) {
-      case 'login'          : return jsonResponse(loginUser(body));
-      case 'addRecipe'      : return jsonResponse(addRecipe(body));
-      case 'updateRecipe'   : return jsonResponse(updateRecipe(body));
-      case 'saveUserData'   : return jsonResponse(saveUserData(body));
-      case 'toggleFavorite' : return jsonResponse(toggleFavorite(body));
-      case 'updateMyOils'   : return jsonResponse(updateMyOils(body));
-      default:
-        return jsonResponse({ success: false, error: 'Unknown action: ' + action });
-    }
-  } catch (err) {
-    return jsonResponse({ success: false, error: err.toString() });
+    const target = document.getElementById('page-recipe-detail');
+    const canvas = await html2canvas(target, {
+      backgroundColor: '#f5f4f1',
+      scale: 2,
+      useCORS: true,
+      scrollY: -window.scrollY,
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight,
+    });
+
+    // 다운로드
+    const link = document.createElement('a');
+    link.download = title + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('이미지가 저장됐어요 📷');
+  } catch(e) {
+    console.error(e);
+    toast('캡쳐 중 오류가 발생했어요');
+  } finally {
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
   }
 }
 
-// ============================================================
-//  0. 인증
-// ============================================================
+async function shareRecipe() {
+  const id = document.getElementById('d-fav-btn').dataset.id;
+  const r  = state.recipes.find(x => x.id === id);
+  if (!r) return;
 
-/**
- * 아이디 + PIN 로그인
- */
-function loginUser(body) {
-  if (!body.uid || !body.pin) return { success: false, error: 'uid, pin 필요' };
+  const shareUrl   = location.origin + location.pathname + '?recipe=' + encodeURIComponent(id);
+  const shareTitle = '🌿 ' + r.title;
+  // text에 URL 포함 — 앱마다 url 파라미터 처리가 달라서 text에도 넣음
+  const shareText  = '🌿 ' + r.title + '\n' + shareUrl;
 
-  var isSignup = (body.isSignup === true || body.isSignup === 'true');
-
-  var ss   = SpreadsheetApp.getActiveSpreadsheet();
-  var ws   = ss.getSheetByName(SHEETS.USER_LIST);
-  var rows = ws.getDataRange().getValues();
-  var now  = new Date().toISOString();
-
-  // 헤더 없으면 초기화
-  if (rows.length === 0 || !rows[0][0]) {
-    ws.getRange(1,1,1,7).setValues([['uid','nickname','pin','favorites','created_at','updated_at','status']]);
-    rows = ws.getDataRange().getValues();
-  }
-
-  var header = rows[0];
-  var idx = {};
-  header.forEach(function(col, i) { if (col) idx[col] = i; });
-
-  // status 컬럼 없으면 추가
-  if (idx['status'] === undefined) {
-    var lastCol = header.length + 1;
-    ws.getRange(1, lastCol).setValue('status');
-    idx['status'] = lastCol - 1;
-  }
-
-  // 기존 유저 찾기
-  for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][idx['uid']]) === String(body.uid)) {
-      // PIN 확인
-      var storedPin = String(rows[i][idx['pin']] || '');
-      if (storedPin !== String(body.pin)) {
-        return { success: false, error: 'PIN이 올바르지 않습니다.' };
-      }
-      // status 확인
-      var status = idx['status'] !== undefined
-        ? String(rows[i][idx['status']] || '').toLowerCase()
-        : 'approved';
-      if (!status) status = 'approved'; // 비어있으면 기존 유저로 간주
-
-      if (status === 'pending') {
-        return { success: false, error: 'pending', message: '가입 승인 대기 중이에요. 관리자 승인 후 이용 가능합니다.' };
-      }
-      if (status === 'rejected') {
-        return { success: false, error: 'rejected', message: '가입이 거절되었습니다.' };
-      }
-      return {
-        success  : true,
-        uid      : body.uid,
-        nickname : String(rows[i][idx['nickname']] || body.uid),
-        favorites: String(rows[i][idx['favorites']] || ''),
-      };
-    }
-  }
-
-  // 신규 — 가입신청이면 pending, 아니면 에러
-  if (isSignup) {
-    var newRow = new Array(Math.max.apply(null, Object.values(idx)) + 1).fill('');
-    newRow[idx['uid']]        = body.uid;
-    newRow[idx['nickname']]   = body.uid;
-    newRow[idx['pin']]        = body.pin;
-    newRow[idx['favorites']]  = '';
-    newRow[idx['created_at']] = now;
-    newRow[idx['updated_at']] = now;
-    newRow[idx['status']]     = 'pending';
-    ws.appendRow(newRow);
-    return { success: true, isPending: true, uid: body.uid };
-  }
-
-  return { success: false, error: 'notfound', message: '등록되지 않은 아이디예요. 가입 신청을 해주세요.' };
-}
-
-
-// ============================================================
-//  1. 레시피 관련
-// ============================================================
-
-function getRecipes(p) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const ws    = ss.getSheetByName(SHEETS.RECIPES);
-  const rows  = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-
-  let recipes = [];
-  for (let i = 2; i < rows.length; i++) {
-    const row = rows[i];
-    if (!row[idx['recipe_id']]) continue;
-    const recipe = rowToRecipe(row, idx);
-    if (p.category     && recipe.category     !== p.category)     continue;
-    if (p.sub_category && recipe.sub_category !== p.sub_category) continue;
-    if (p.method       && recipe.method       !== p.method)       continue;
-    if (p.difficulty   && recipe.difficulty   !== p.difficulty)   continue;
-    if (p.tag          && !recipe.tags.includes(p.tag))           continue;
-    recipes.push(recipe);
-  }
-
-  const page  = parseInt(p.page  || 1);
-  const limit = parseInt(p.limit || 9999);
-  const total = recipes.length;
-  recipes = recipes.slice((page-1)*limit, page*limit);
-  return { success: true, data: recipes, total, page, limit };
-}
-
-function getRecipe(id) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const ws    = ss.getSheetByName(SHEETS.RECIPES);
-  const rows  = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  for (let i = 2; i < rows.length; i++) {
-    if (String(rows[i][idx['recipe_id']]) === String(id)) {
-      return { success: true, data: rowToRecipe(rows[i], idx) };
-    }
-  }
-  return { success: false, error: '레시피를 찾을 수 없습니다.' };
-}
-
-function searchRecipes(q, p) {
-  if (!q) return { success: true, data: [], total: 0 };
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const ws    = ss.getSheetByName(SHEETS.RECIPES);
-  const rows  = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  const keyword = q.toLowerCase();
-  const results = [];
-  for (let i = 2; i < rows.length; i++) {
-    const row = rows[i];
-    if (!row[idx['recipe_id']]) continue;
-    const recipe = rowToRecipe(row, idx);
-    const text = [recipe.title, recipe.category, recipe.sub_category,
-                  recipe.tags, recipe.oils_list, recipe.how_to_use].join(' ').toLowerCase();
-    if (text.includes(keyword)) results.push(recipe);
-  }
-  const page  = parseInt(p.page  || 1);
-  const limit = parseInt(p.limit || 9999);
-  const total = results.length;
-  return { success: true, data: results.slice((page-1)*limit, page*limit), total, page, limit, query: q };
-}
-
-/**
- * 내 오일 목록 기반 레시피 추천
- * oils: 콤마 구분 오일명 문자열
- */
-function getRecommendedRecipes(p) {
-  if (!p.oils) return { success: true, data: [] };
-  const myOils = p.oils.split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
-  if (!myOils.length) return { success: true, data: [] };
-
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const ws    = ss.getSheetByName(SHEETS.RECIPES);
-  const rows  = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-
-  const scored = [];
-  for (let i = 2; i < rows.length; i++) {
-    const row = rows[i];
-    if (!row[idx['recipe_id']]) continue;
-    const recipe = rowToRecipe(row, idx);
-    const recipeOils = recipe.oils_list.split(',').map(o => o.trim().toLowerCase()).filter(Boolean);
-    const matched = recipeOils.filter(o => myOils.includes(o)).length;
-    if (matched > 0 && matched === recipeOils.length) {
-      scored.push({ ...recipe, matchCount: matched });
-    }
-  }
-  scored.sort((a, b) => b.matchCount - a.matchCount);
-  return { success: true, data: scored.slice(0, 10) };
-}
-
-function addRecipe(body) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const ws = ss.getSheetByName(SHEETS.RECIPES);
-  const rows = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-
-  const newId = 'USR' + new Date().getTime();
-  const oilsList = [];
-  const ingredients = [];
-  for (let n = 1; n <= 10; n++) {
-    const oil = body['oil' + n];
-    const drops = body['drops' + n];
-    if (oil) { oilsList.push(oil); if (drops) ingredients.push(oil + ' ' + drops); }
-  }
-
-  const newRow = new Array(header.length).fill('');
-  const set = (k, v) => { if (idx[k] !== undefined) newRow[idx[k]] = v; };
-  set('recipe_id', newId);
-  set('title',          body.title          || '');
-  set('category',       body.category       || '');
-  set('sub_category',   body.sub_category   || '');
-  set('method',         body.method         || '');
-  set('base_materials', body.base_materials || '');
-  set('ingredients',    ingredients.join(', '));
-  set('oils_list',      oilsList.join(','));
-  set('how_to_make',    body.how_to_make    || '');
-  set('how_to_use',     body.how_to_use     || '');
-  set('apply_area',     body.apply_area     || '');
-  set('internal_safe',  body.internal_safe  || '불가');
-  set('difficulty',     body.difficulty     || '쉬움');
-  set('tags',           body.tags           || '');
-  set('caution',        body.caution        || '');
-  set('source',         body.source         || body.uid || '본인');
-  set('notes',          body.notes          || '');
-  set('private',        body.private        || 'false');
-  for (let n = 1; n <= 10; n++) {
-    set('oil' + n,   body['oil' + n]   || '');
-    set('drops' + n, body['drops' + n] || '');
-  }
-  ws.appendRow(newRow);
-  return { success: true, id: newId, message: '레시피가 추가되었습니다.' };
-}
-
-function updateRecipe(body) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const ws    = ss.getSheetByName(SHEETS.RECIPES);
-  const rows  = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  for (let i = 2; i < rows.length; i++) {
-    if (String(rows[i][idx['recipe_id']]) === String(body.id)) {
-      const fields = ['title','category','sub_category','method','base_materials',
-                      'how_to_make','how_to_use','apply_area','internal_safe',
-                      'difficulty','tags','caution','notes'];
-      fields.forEach(f => {
-        if (body[f] !== undefined && idx[f] !== undefined)
-          ws.getRange(i+1, idx[f]+1).setValue(body[f]);
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: shareTitle,
+        text : shareText,
       });
-      for (let n = 1; n <= 10; n++) {
-        if (body['oil'+n]   !== undefined && idx['oil'+n]   !== undefined)
-          ws.getRange(i+1, idx['oil'+n]+1).setValue(body['oil'+n]);
-        if (body['drops'+n] !== undefined && idx['drops'+n] !== undefined)
-          ws.getRange(i+1, idx['drops'+n]+1).setValue(body['drops'+n]);
-      }
-      // oils_list 자동 갱신
-      const oilsList = [];
-      for (let n = 1; n <= 10; n++) { if (body['oil'+n]) oilsList.push(body['oil'+n]); }
-      if (oilsList.length && idx['oils_list'] !== undefined)
-        ws.getRange(i+1, idx['oils_list']+1).setValue(oilsList.join(','));
-      return { success: true, message: '레시피가 수정되었습니다.' };
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
     }
   }
-  return { success: false, error: '레시피를 찾을 수 없습니다.' };
-}
-
-function rowToRecipe(row, idx) {
-  const oils = [];
-  for (let n = 1; n <= 10; n++) {
-    const oil   = row[idx['oil'+n]]   || '';
-    const drops = row[idx['drops'+n]] || '';
-    if (oil) oils.push({ oil, drops: String(drops) });
+  // fallback — URL 클립보드 복사
+  const copyText = shareText;
+  if (navigator.clipboard) {
+    await navigator.clipboard.writeText(copyText).catch(() => {});
+  } else {
+    const el = document.createElement('textarea');
+    el.value = copyText;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
   }
-  return {
-    id           : String(row[idx['recipe_id']]    || ''),
-    title        : String(row[idx['title']]         || ''),
-    category     : String(row[idx['category']]      || ''),
-    sub_category : String(row[idx['sub_category']]  || ''),
-    method       : String(row[idx['method']]        || ''),
-    oils,
-    base_materials: String(row[idx['base_materials']]|| ''),
-    ingredients  : String(row[idx['ingredients']]   || ''),
-    oils_list    : String(row[idx['oils_list']]     || ''),
-    how_to_make  : String(row[idx['how_to_make']]   || ''),
-    how_to_use   : String(row[idx['how_to_use']]    || ''),
-    apply_area   : String(row[idx['apply_area']]    || ''),
-    internal_safe: String(row[idx['internal_safe']] || ''),
-    difficulty   : String(row[idx['difficulty']]    || ''),
-    tags         : String(row[idx['tags']]          || ''),
-    caution      : String(row[idx['caution']]       || ''),
-    source       : String(row[idx['source']]        || ''),
-    notes        : String(row[idx['notes']]         || ''),
-    private      : String(row[idx['private']]      || 'false'),
-  };
+  toast('링크가 복사됐어요! 카톡에 붙여넣기 하세요 🔗');
 }
 
-// ============================================================
-//  2. 오일 관련
-// ============================================================
+async function toggleFav() {
+  const id = document.getElementById('d-fav-btn').dataset.id;
+  if (!id || !state.user) return;
 
-function getOils() {
-  const ss     = SpreadsheetApp.getActiveSpreadsheet();
-  const ws     = ss.getSheetByName(SHEETS.OILS);
-  const rows   = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  const oils = [];
-  for (let i = 2; i < rows.length; i++) {
-    if (!rows[i][idx['product_no']]) continue;
-    oils.push(rowToOil(rows[i], idx));
-  }
-  return { success: true, data: oils };
+  const favs    = state.user.favorites || [];
+  const isAdding = !favs.includes(id);
+  const updated  = isAdding ? [...favs, id] : favs.filter(f => f !== id);
+
+  // UI 즉각 반응
+  state.user.favorites = updated;
+  localStorage.setItem('an_user', JSON.stringify(state.user));
+  document.getElementById('d-fav-btn').textContent = isAdding ? '♥' : '♡';
+  toast(isAdding ? '즐겨찾기에 추가했어요' : '즐겨찾기에서 삭제했어요');
+  renderHomeFav();
+  renderMyPage();
+
+  // API 백그라운드
+  api({ action:'toggleFavorite' }, 'POST', { uid: state.user.uid, recipe_id: id })
+    .then(() => {
+      // 유저 데이터만 재로드 (빠름)
+      loadUserData();
+    })
+    .catch(() => toast('저장 중 오류가 발생했어요'));
 }
 
-function getOil(key) {
-  const ss     = SpreadsheetApp.getActiveSpreadsheet();
-  const ws     = ss.getSheetByName(SHEETS.OILS);
-  const rows   = ws.getDataRange().getValues();
-  const header = rows[1];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  for (let i = 2; i < rows.length; i++) {
-    const row = rows[i];
-    if (String(row[idx['key']])     === key ||
-        String(row[idx['name_ko']]) === key ||
-        String(row[idx['name_en']]) === (key||'').toUpperCase()) {
-      return { success: true, data: rowToOil(row, idx) };
-    }
-  }
-  return { success: false, error: '오일을 찾을 수 없습니다.' };
+// ── RECIPE FORM ──────────────────────────────────────────────
+function openAddRecipeForm() {
+  state.editRecipeId = null;
+  document.getElementById('form-title').textContent = '레시피 등록';
+  document.getElementById('submit-btn').textContent = '등록하기';
+  clearForm();
+  populateFormSelects();
+  state.prevPage = state.page;
+  showPage('page-recipe-form');
 }
 
-function rowToOil(row, idx) {
-  return {
-    no              : String(row[idx['no']]             || ''),
-    name_ko         : String(row[idx['name_ko']]        || ''),
-    name_en         : String(row[idx['name_en']]        || ''),
-    key             : String(row[idx['key']]            || ''),
-    product_no      : String(row[idx['product_no']]     || ''),
-    price           : String(row[idx['price']]          || ''),
-    volume          : String(row[idx['volume']]         || ''),
-    type            : String(row[idx['type']]           || ''),
-    category        : String(row[idx['category']]       || ''),
-    scent           : String(row[idx['scent']]          || ''),
-    ingredients     : String(row[idx['ingredients']]    || ''),
-    keyword         : String(row[idx['keyword']]        || ''),
-    description     : String(row[idx['description']]    || ''),
-    benefits        : String(row[idx['benefits']]       || ''),
-    url             : String(row[idx['url']]            || ''),
-    image_url       : String(row[idx['image_url']]      || ''),
-    benefits_summary: String(row[idx['benefits_summary']]|| ''),
-    cautions        : String(row[idx['cautions']]       || ''),
-    desc_short      : String(row[idx['desc_short']]     || ''),
-  };
+function clearForm() {
+  ['f-title','f-sub-category','f-base','f-how-to-make','f-how-to-use','f-apply-area','f-tags','f-caution','f-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-private').checked = false;
+  // 초기 행 없이 시작 — 추가 버튼 클릭 시에만 생성
+  document.getElementById('oil-fields').innerHTML = '';
 }
 
-// ============================================================
-//  3. 카테고리
-// ============================================================
+function populateFormSelects() {
+  const cats = (state.categories.category || []).map(c => `<option value="${c.value}">${c.value}</option>`).join('');
+  document.getElementById('f-category').innerHTML = '<option value="">선택</option>' + cats;
 
-function getCategories() {
-  const ss   = SpreadsheetApp.getActiveSpreadsheet();
-  const ws   = ss.getSheetByName(SHEETS.CATEGORIES);
-  const rows = ws.getDataRange().getValues();
-  const result = {
-    category: [], sub_category: [], method: [], difficulty: [],
-    internal_safe: [], caution: [], source: [], tag: [],
-  };
-  for (let i = 0; i < rows.length; i++) {
-    const [type, value_ko, value_en] = rows[i];
-    if (!type || !value_ko || type === '구분' || type === '(type)') continue;
-    if (result[type] !== undefined)
-      result[type].push({ value: value_ko, label_en: value_en || '' });
-  }
-  return { success: true, data: result };
+  const subs = (state.categories.sub_category || []).map(c => `<option value="${c.value}">${c.value}</option>`).join('');
+  document.getElementById('f-sub-category').innerHTML = '<option value="">선택</option>' + subs;
+
+  const methods = (state.categories.method || []).map(c => `<option value="${c.value}">${c.value}</option>`).join('');
+  document.getElementById('f-method').innerHTML = '<option value="">선택</option>' + methods;
 }
 
-// ============================================================
-//  4. 유저 데이터
-// ============================================================
-
-function getUserData(uid) {
-  if (!uid) return { success: false, error: 'uid 필요' };
-  const ss  = SpreadsheetApp.getActiveSpreadsheet();
-  const wsU = ss.getSheetByName(SHEETS.USER_LIST);
-  const wsO = ss.getSheetByName(SHEETS.USERS_OIL);
-  const userData = findOrCreateUser(wsU, uid);
-  const myOils   = getMyOils(wsO, uid);
-  return {
-    success: true,
-    data: {
-      uid,
-      favorites : userData.favorites ? userData.favorites.split(',').filter(Boolean) : [],
-      my_oils   : myOils,
-      nickname  : userData.nickname  || '',
-      created_at: userData.created_at|| '',
-    }
-  };
+function addOilRow() {
+  const rows = document.querySelectorAll('#oil-fields .oil-field-row');
+  if (rows.length >= 10) return toast('오일은 최대 10개까지 추가할 수 있어요');
+  const n = Date.now(); // 고유 번호
+  const div = document.createElement('div');
+  div.className = 'oil-field-row';
+  div.innerHTML = makeOilFieldRow(n);
+  // 버튼 바로 아래, 기존 행들 위에 삽입
+  const container = document.getElementById('oil-fields');
+  container.insertBefore(div, container.firstChild);
+  div.querySelector('[data-oil]').focus();
 }
 
-function findOrCreateUser(ws, uid) {
-  const rows = ws.getDataRange().getValues();
-  if (rows.length === 0 || !rows[0][0]) {
-    ws.getRange(1,1,1,6).setValues([['uid','nickname','pin','favorites','created_at','updated_at']]);
-    ws.appendRow([uid, uid, '', '', new Date().toISOString(), new Date().toISOString()]);
-    return { uid, nickname: uid, favorites: '', created_at: new Date().toISOString() };
-  }
-  const header = rows[0];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][idx['uid']]) === String(uid)) {
-      return {
-        uid,
-        nickname  : String(rows[i][idx['nickname']]  || uid),
-        favorites : String(rows[i][idx['favorites']] || ''),
-        created_at: String(rows[i][idx['created_at']]|| ''),
-      };
-    }
-  }
-  ws.appendRow([uid, uid, '', '', new Date().toISOString(), new Date().toISOString()]);
-  return { uid, nickname: uid, favorites: '', created_at: new Date().toISOString() };
+function makeOilFieldRow(n) {
+  return `
+    <input class="form-input" placeholder="오일명" data-oil="${n}"
+      oninput="showOilAC(this)" onblur="hideOilAC(this)"
+      onkeydown="handleOilACKey(event,this)" autocomplete="off">
+    <input class="form-input" placeholder="양 (방울)" data-drops="${n}">
+    <button class="remove-oil-btn" onclick="removeOilRow(this)">×</button>`;
 }
 
-function getMyOils(ws, uid) {
-  const rows = ws.getDataRange().getValues();
-  if (rows.length <= 1) return [];
-  const header = rows[0];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  return rows.slice(1)
-    .filter(r => String(r[idx['uid']]) === String(uid))
-    .map(r => String(r[idx['oil_name']] || ''))
-    .filter(Boolean);
-}
+// ── 오일 자동완성 ──────────────────────────────────────────
+function showOilAC(input) {
+  hideOilAC(input);
+  const q = input.value.trim();
+  if (!q) return;
+  const matches = state.oils
+    .map(o => o.name_ko)
+    .filter(n => n.includes(q))
+    .slice(0, 8);
+  if (!matches.length) return;
 
-function saveUserData(body) {
-  if (!body.uid) return { success: false, error: 'uid 필요' };
-  const ss   = SpreadsheetApp.getActiveSpreadsheet();
-  const ws   = ss.getSheetByName(SHEETS.USER_LIST);
-  const rows = ws.getDataRange().getValues();
-  const header = rows[0];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][idx['uid']]) === String(body.uid)) {
-      if (body.nickname !== undefined && idx['nickname'] !== undefined)
-        ws.getRange(i+1, idx['nickname']+1).setValue(body.nickname);
-      if (idx['updated_at'] !== undefined)
-        ws.getRange(i+1, idx['updated_at']+1).setValue(new Date().toISOString());
-      return { success: true, message: '저장되었습니다.' };
-    }
-  }
-  return { success: false, error: '유저를 찾을 수 없습니다.' };
-}
+  const row = input.closest('.oil-field-row');
+  const ac = document.createElement('div');
+  ac.className = 'oil-autocomplete';
 
-function toggleFavorite(body) {
-  if (!body.uid || !body.recipe_id) return { success: false, error: 'uid, recipe_id 필요' };
-  const ss   = SpreadsheetApp.getActiveSpreadsheet();
-  const ws   = ss.getSheetByName(SHEETS.USER_LIST);
-  const rows = ws.getDataRange().getValues();
-  const header = rows[0];
-  const idx = {};
-  header.forEach((col, i) => { if (col) idx[col] = i; });
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][idx['uid']]) === String(body.uid)) {
-      let favList = String(rows[i][idx['favorites']] || '').split(',').filter(Boolean);
-      const pos = favList.indexOf(String(body.recipe_id));
-      let added;
-      if (pos > -1) { favList.splice(pos, 1); added = false; }
-      else          { favList.push(String(body.recipe_id)); added = true; }
-      ws.getRange(i+1, idx['favorites']+1).setValue(favList.join(','));
-      if (idx['updated_at'] !== undefined)
-        ws.getRange(i+1, idx['updated_at']+1).setValue(new Date().toISOString());
-      return { success: true, added, favorites: favList };
-    }
-  }
-  return { success: false, error: '유저를 찾을 수 없습니다.' };
-}
-
-function updateMyOils(body) {
-  if (!body.uid) return { success: false, error: 'uid 필요' };
-  const ss  = SpreadsheetApp.getActiveSpreadsheet();
-  const ws  = ss.getSheetByName(SHEETS.USERS_OIL);
-
-  // 헤더 확인
-  var allRows = ws.getDataRange().getValues();
-  if (allRows.length === 0 || !allRows[0][0]) {
-    ws.getRange(1,1,1,3).setValues([['uid','oil_name','added_at']]);
-    allRows = ws.getDataRange().getValues();
-  }
-
-  const newOilList = Array.isArray(body.oils)
-    ? body.oils.filter(Boolean).map(function(o){ return o.trim(); })
-    : (body.oils || '').split(',').filter(Boolean).map(function(o){ return o.trim(); });
-
-  const header = allRows[0];
-  const idx = {};
-  header.forEach(function(col, i){ if (col) idx[col] = i; });
-
-  // 현재 저장된 오일 목록
-  const existingMap = {}; // oil_name → row번호(1-based)
-  for (var i = 1; i < allRows.length; i++) {
-    if (String(allRows[i][idx['uid']]) === String(body.uid)) {
-      existingMap[String(allRows[i][idx['oil_name']]).trim()] = i + 1;
-    }
-  }
-
-  const existingSet = Object.keys(existingMap);
-  const newSet      = newOilList;
-  const now         = new Date().toISOString();
-
-  // 추가할 것 = 새 목록에 있고 기존에 없는 것
-  const toAdd = newSet.filter(function(o){ return !existingMap[o]; });
-
-  // 삭제할 것 = 기존에 있고 새 목록에 없는 것 (역순으로 삭제)
-  const toRemove = existingSet
-    .filter(function(o){ return newSet.indexOf(o) === -1; })
-    .map(function(o){ return existingMap[o]; })
-    .sort(function(a,b){ return b - a; }); // 역순
-
-  // 삭제
-  toRemove.forEach(function(rowNum){ ws.deleteRow(rowNum); });
-
-  // 추가
-  toAdd.forEach(function(oil){ ws.appendRow([body.uid, oil, now]); });
-
-  return { success: true, message: '오일 목록이 업데이트되었습니다.', oils: newOilList,
-           added: toAdd.length, removed: toRemove.length };
-}
-
-
-// ============================================================
-//  통합 초기화 — 1번 호출로 categories + oils + recipes 반환
-//  Index.html 첫 로드 시 API 왕복 횟수 최소화
-// ============================================================
-function getInitialData() {
-  try {
-    var cats    = getCategories();
-    var oils    = getOils();
-    var recipes = getRecipes({ limit: '9999' });
-    var images  = getOilImages();
-    return {
-      success  : true,
-      categories: cats.data,
-      oils     : oils.data,
-      recipes  : recipes.data,
-      oilImages: images.data,
+  matches.forEach((name, i) => {
+    const item = document.createElement('div');
+    item.className = 'oil-ac-item';
+    item.textContent = name;
+    item.dataset.idx = i;
+    item.onmousedown = (e) => {
+      e.preventDefault();
+      selectOilAC(input, name);
     };
-  } catch(e) {
-    return { success: false, error: e.toString() };
+    ac.appendChild(item);
+  });
+  row.appendChild(ac);
+}
+
+function selectOilAC(input, name) {
+  input.value = name;
+  hideOilAC(input);
+  // 방울 입력칸으로 포커스
+  const row = input.closest('.oil-field-row');
+  const dropsInput = row ? row.querySelector('[data-drops]') : null;
+  if (dropsInput) dropsInput.focus();
+}
+
+function hideOilAC(input) {
+  const row = input.closest('.oil-field-row');
+  if (!row) return;
+  const ac = row.querySelector('.oil-autocomplete');
+  if (ac) ac.remove();
+}
+
+function handleOilACKey(e, input) {
+  const row = input.closest('.oil-field-row');
+  if (!row) return;
+  const ac = row.querySelector('.oil-autocomplete');
+
+  if (e.key === 'Escape') {
+    hideOilAC(input);
+    return;
   }
-}
 
-/**
- * GET 파라미터로 받은 oils 처리 (콤마 구분 문자열)
- */
-function updateMyOilsFromGet(p) {
-  // oils가 배열로 오거나 콤마 구분 문자열로 올 수 있음
-  var oils = [];
-  if (Array.isArray(p.oils)) {
-    oils = p.oils.filter(Boolean);
-  } else if (p.oils) {
-    oils = p.oils.split(',').filter(Boolean);
-  }
-  return updateMyOils({ uid: p.uid, oils: oils });
-}
-// ============================================================
-//  클라이언트(google.script.run) 전용 래퍼 함수
-// ============================================================
+  if (!ac) return;
+  const items = ac.querySelectorAll('.oil-ac-item');
+  if (!items.length) return;
 
-// checkAuthClient 제거 — 소유자 실행 방식
+  // 현재 선택된 인덱스
+  let cur = -1;
+  items.forEach((item, i) => { if (item.classList.contains('selected')) cur = i; });
 
-function getRecipesClient(p) {
-  return getRecipes(p || {});
-}
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = Math.min(cur + 1, items.length - 1);
+    items.forEach(item => item.classList.remove('selected'));
+    items[next].classList.add('selected');
+    items[next].scrollIntoView({ block: 'nearest' });
 
-function searchRecipesClient(p) {
-  return searchRecipes(p.q || '', p);
-}
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = Math.max(cur - 1, 0);
+    items.forEach(item => item.classList.remove('selected'));
+    items[prev].classList.add('selected');
+    items[prev].scrollIntoView({ block: 'nearest' });
 
-// ============================================================
-//  6. 오일 이미지
-// ============================================================
-
-const OIL_IMAGE_FOLDER_ID = '1ibo94KoQAQ_krFLeiTuYnfe-1bUQrtLd';
-
-/**
- * img 폴더에서 오일명 → 파일ID 맵 반환
- * 파일명 형식: "03. 라벤더.jpg" → key: "라벤더"
- */
-function getOilImages() {
-  try {
-    const folder = DriveApp.getFolderById(OIL_IMAGE_FOLDER_ID);
-    const files  = folder.getFiles();
-    const images = {};
-    while (files.hasNext()) {
-      const file = files.next();
-      const raw  = file.getName();
-      // "03. 라벤더.jpg" → "라벤더"
-      const name = raw.replace(/\.\w+$/, '').replace(/^\d+\.\s*/, '').trim();
-      images[name] = file.getId();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (cur >= 0) {
+      selectOilAC(input, items[cur].textContent);
+    } else if (items.length === 1) {
+      selectOilAC(input, items[0].textContent);
     }
-    return { success: true, data: images };
-  } catch(e) {
-    return { success: false, error: e.toString() };
   }
 }
 
-// ── 권한 동의용 테스트 함수 (에디터에서 한번만 실행) ──────────
-function authorizeAll() {
-  // SpreadsheetApp 권한
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  Logger.log('Sheet ID: ' + ss.getId());
-  
-  // DriveApp 권한  
-  const folder = DriveApp.getFolderById(OIL_IMAGE_FOLDER_ID);
-  Logger.log('Folder: ' + folder.getName());
-  
-  // 전체 데이터 테스트
-  const result = getInitialData();
-  Logger.log('recipes: ' + result.recipes.length);
-  Logger.log('oils: ' + result.oils.length);
-  Logger.log('images: ' + Object.keys(result.oilImages).length);
-  Logger.log('권한 동의 완료!');
+function removeOilRow(btn) {
+  const rows = document.querySelectorAll('#oil-fields .oil-field-row');
+  if (rows.length <= 1) return;
+  btn.closest('.oil-field-row').remove();
 }
+
+async function submitRecipe() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) return toast('제목을 입력해주세요');
+
+  // ── 중복 레시피 체크 (오일 구성 + 방울수 모두 일치) ──
+  if (!state.editRecipeId) {
+    const newOils = [];
+    document.querySelectorAll('#oil-fields .oil-field-row').forEach(row => {
+      const oil   = (row.querySelector('[data-oil]')?.value || '').trim();
+      const drops = (row.querySelector('[data-drops]')?.value || '').trim();
+      if (oil) newOils.push(oil + '|' + drops);
+    });
+    newOils.sort();
+
+    const duplicate = state.recipes.find(r => {
+      if (!r.oils || !r.oils.length) return false;
+      const rOils = r.oils.map(o => o.oil + '|' + o.drops).sort();
+      if (rOils.length !== newOils.length) return false;
+      return rOils.every((o, i) => o === newOils[i]);
+    });
+
+    if (duplicate) {
+      const el = document.getElementById('toast');
+      el.innerHTML = `동일한 레시피가 존재합니다 &nbsp;<u style="font-weight:500">${duplicate.title}</u>`;
+      el.classList.add('show', 'clickable');
+      el.onclick = () => {
+        openRecipeDetail(duplicate.id);
+        el.classList.remove('show', 'clickable');
+        el.onclick = null;
+      };
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => {
+        el.classList.remove('show', 'clickable');
+        el.onclick = null;
+      }, 4000);
+      return;
+    }
+  }
+
+  const body = {
+    title        : title,
+    category     : document.getElementById('f-category').value,
+    sub_category : document.getElementById('f-sub-category').value.trim(),
+    method       : document.getElementById('f-method').value,
+    difficulty   : document.getElementById('f-difficulty').value,
+    base_materials: document.getElementById('f-base').value.trim(),
+    how_to_make  : document.getElementById('f-how-to-make').value.trim(),
+    how_to_use   : document.getElementById('f-how-to-use').value.trim(),
+    apply_area   : document.getElementById('f-apply-area').value.trim(),
+    tags         : document.getElementById('f-tags').value.trim(),
+    caution      : document.getElementById('f-caution').value.trim(),
+    notes        : document.getElementById('f-notes').value.trim(),
+    uid          : state.user?.uid,
+    source       : state.user?.uid || '',
+    private      : document.getElementById('f-private').checked ? 'true' : 'false',
+  };
+
+  document.querySelectorAll('#oil-fields .oil-field-row').forEach((row, i) => {
+    const n = i + 1;
+    body['oil'+n]   = row.querySelector('[data-oil]')?.value.trim() || '';
+    body['drops'+n] = row.querySelector('[data-drops]')?.value.trim() || '';
+  });
+
+  const action = state.editRecipeId ? 'updateRecipe' : 'addRecipe';
+  if (state.editRecipeId) body.id = state.editRecipeId;
+
+  // UI 즉각 반응 — 임시로 state에 추가 후 화면 전환
+  const tempId = state.editRecipeId || ('USR' + Date.now());
+  const tempRecipe = {
+    ...body,
+    id: tempId,
+    oils: Object.keys(body).filter(k => k.startsWith('oil') && !k.startsWith('oils') && body[k])
+           .map((k,i) => ({ oil: body[k], drops: body['drops'+(i+1)] || '' })),
+    oils_list: Object.keys(body).filter(k => k.startsWith('oil') && !k.startsWith('oils') && body[k])
+               .map(k => body[k]).join(','),
+    tags: body.tags || '',
+    difficulty: body.difficulty || '쉬움',
+    source: body.uid || '',
+  };
+
+  if (!state.editRecipeId) {
+    state.recipes = [tempRecipe, ...state.recipes]; // 맨 앞에 추가 → 최근 등록 즉시 반영
+  } else {
+    state.recipes = state.recipes.map(r => r.id === state.editRecipeId ? { ...r, ...tempRecipe } : r);
+  }
+
+  toast(state.editRecipeId ? '레시피를 수정했어요' : '레시피를 등록했어요!');
+  renderAll();
+  goBack();
+
+  // 백그라운드에서 실제 저장
+  api({ action }, 'POST', body)
+    .then(r => {
+      if (!r.success) { toast('저장 중 오류: ' + (r.error||'')); return; }
+      // 실제 ID로 교체 후 캐시 갱신
+      if (!state.editRecipeId && r.id) {
+        state.recipes = state.recipes.map(x => x.id === tempId ? { ...x, id: r.id } : x);
+      }
+      localStorage.removeItem('an_cache');
+      loadAllData();
+    })
+    .catch(() => toast('저장 중 오류가 발생했어요'));
+}
+
+// ── OILS ─────────────────────────────────────────────────────
+const OIL_ICONS = { '라벤더':'🌸','페퍼민트':'🌿','레몬':'🍋','프랑킨센스':'🌲','유칼립투스':'🍃','베르가못':'🍊','시더우드':'🌳','티트리':'💚','온가드':'🛡️','딥블루':'💙','로즈마리':'🌱','제라늄':'🌺','일랑일랑':'🌼','진저':'🫚','오렌지':'🍊','라임':'🍈','자몽':'🍋' };
+const OIL_ICON_DEFAULT = '💧';
+
+// ── 오일 이미지 헬퍼 ─────────────────────────────────────────
+function oilImgUrl(name) {
+  const id = state.oilImages[name];
+  if (!id) return null;
+  return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w200';
+}
+
+function oilImgEl(name, size='36px', radius='9px') {
+  const url = oilImgUrl(name);
+  if (url) {
+    return `<img src="${url}" alt="${name}" style="width:${size};height:${size};border-radius:${radius};object-fit:cover;display:block;">`;
+  }
+  return `<span style="font-size:calc(${size} * 0.5)">${OIL_ICONS[name]||OIL_ICON_DEFAULT}</span>`;
+}
+
+function renderOilPage() {
+  // 타입 칩
+  const types = ['전체', ...new Set(state.oils.map(o => o.type).filter(Boolean))];
+  document.getElementById('oil-type-chips').innerHTML = types.map((t,i) =>
+    `<button class="chip${i===0?' on':''}" onclick="filterOils('${t}',this)">${t}</button>`
+  ).join('');
+  renderOilGrid();
+}
+
+function renderOilGrid(filter='', typeFilter='전체') {
+  const el = document.getElementById('oil-grid');
+  // 가나다 순 정렬
+  let list = [...state.oils].sort((a, b) => a.name_ko.localeCompare(b.name_ko, 'ko'));
+  if (typeFilter && typeFilter !== '전체') list = list.filter(o => o.type === typeFilter);
+  if (filter) list = list.filter(o => (o.name_ko+o.name_en+o.keyword+o.description).toLowerCase().includes(filter.toLowerCase()));
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-box" style="grid-column:1/-1;margin:0"><p>오일 정보가 없어요.</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(o => {
+    const isMy = (state.user?.my_oils||[]).includes(o.name_ko);
+    return `
+    <div class="oil-card ${isMy?'is-my':''}" data-oil-name="${o.name_ko}" style="position:relative" onclick="openOilDetail(${JSON.stringify(o).replace(/"/g,'&quot;')},'oils')">
+      <div class="oc-icon">${oilImgEl(o.name_ko,'36px','9px')}</div>
+      <div class="oc-name">${o.name_ko}</div>
+      <div class="oc-name-en">${o.name_en||''}</div>
+      <button class="myoil-btn ${isMy?'remove':'add'}"
+        style="position:absolute;top:10px;right:10px"
+        onclick="event.stopPropagation(); toggleMyOilQuick('${o.name_ko}', this)"
+        title="${isMy?'내 오일에서 제거':'내 오일에 추가'}"
+      >${isMy?'−':'＋'}</button>
+    </div>`;
+  }).join('');
+}
+
+let _oilSearchTimer;
+let _activeTypeFilter = '전체';
+function onOilSearch(q) {
+  clearTimeout(_oilSearchTimer);
+  _oilSearchTimer = setTimeout(() => renderOilGrid(q, _activeTypeFilter), 250);
+}
+function filterOils(type, el) {
+  _activeTypeFilter = type;
+  document.querySelectorAll('#oil-type-chips .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  renderOilGrid(document.getElementById('oil-search').value, type);
+}
+
+// 줄바꿈 텍스트 → ul 리스트로 변환
+function textToList(text) {
+  if (!text || text === '—') return '<span style="color:var(--text-3)">—</span>';
+  const lines = text.split(/\n|\r\n|\r/).map(l => l.trim()).filter(Boolean);
+  if (lines.length <= 1) return `<span>${text}</span>`;
+  return `<ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
+}
+
+function openOilDetail(oil, fromPage) {
+  if (typeof oil === 'string') oil = state.oils.find(o => o.key === oil || o.name_ko === oil);
+  if (!oil) return;
+
+  // fromPage 명시되면 사용, 아니면 현재 활성 탭
+  if (fromPage) {
+    state.prevPage = fromPage;
+  } else {
+    const activeNavO = document.querySelector('.nav-item.active');
+    state.prevPage = activeNavO ? activeNavO.id.replace('nav-', '') : state.page;
+  }
+  const odImgWrap = document.getElementById('od-img-wrap');
+  const odUrl = oilImgUrl(oil.name_ko);
+  if (odUrl) {
+    odImgWrap.innerHTML = `<img src="${odUrl}" alt="${oil.name_ko}">`;
+  } else {
+    odImgWrap.innerHTML = `<div class="od-emoji">${OIL_ICONS[oil.name_ko] || OIL_ICON_DEFAULT}</div>`;
+  }
+  document.getElementById('od-name').textContent    = oil.name_ko;
+  document.getElementById('od-en').textContent      = oil.name_en || '';
+  // L열(keyword) — 상단 키워드 태그
+  document.getElementById('od-keywords').innerHTML = oil.keyword
+    ? oil.keyword.split(',').map(k => `<span class="ood-tag" style="background:rgba(74,111,165,0.12);color:var(--accent)">${k.trim()}</span>`).join('')
+    : '';
+  document.getElementById('od-desc').innerHTML     = textToList(oil.description || oil.desc_short || '—');
+  // Q열(benefits_summary) + N열(benefits) 순서로 표시
+  const benefitsHtml = [
+    oil.benefits_summary ? `<div style="margin-bottom:${oil.benefits ? '12px' : '0'}">${textToList(oil.benefits_summary)}</div>` : '',
+    oil.benefits ? textToList(oil.benefits) : '',
+  ].filter(Boolean).join('');
+  document.getElementById('od-benefits').innerHTML = benefitsHtml || '<span style="color:var(--text-3)">—</span>';
+  document.getElementById('od-cautions').innerHTML  = textToList(oil.cautions || '특별한 주의사항이 없어요.');
+
+  // 관련 레시피 — 전체 표시
+  const related = state.recipes.filter(r =>
+    r.oils_list.toLowerCase().includes(oil.name_ko.toLowerCase())
+  );
+  // 관련 레시피 라벨에 카운트 업데이트
+  // 카운트는 렌더 시 od-related-count에 표시
+  if (!related.length) {
+    document.getElementById('od-related-count').textContent = '0개';
+    document.getElementById('od-related-chips').innerHTML = '';
+    document.getElementById('od-related-list').innerHTML = '<div class="empty-box" style="margin:0 18px;text-align:center"><p>관련 레시피가 없어요.</p></div>';
+  } else {
+    // 카테고리 목록 추출
+    const relatedCats = ['전체', ...new Set(related.map(r => r.category).filter(Boolean))];
+    const chipHtml = relatedCats.map((c,i) =>
+      `<button onclick="filterOdRelated('${c}',this)" style="flex-shrink:0;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);background:${i===0?'var(--accent)':'var(--surface)'};color:${i===0?'#fff':'var(--text-2)'};cursor:pointer;font-family:var(--sans);white-space:nowrap;transition:all 0.15s" data-cat="${c}">${c}</button>`
+    ).join('');
+
+    const gridHtml = (list) => list.map(r => `
+      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}','home')">
+        <div class="rm-method">${r.category||r.method||''}</div>
+        <div class="rm-title">${r.title}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
+      </div>`).join('');
+
+    // 카운트 + 칩을 헤더 한 줄에
+    document.getElementById('od-related-count').textContent = related.length + '개';
+    document.getElementById('od-related-chips').innerHTML = chipHtml;
+    document.getElementById('od-related-list').innerHTML =
+      `<div id="od-related-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px">${gridHtml(related)}</div>`;
+
+    // 필터 함수 — 전역
+    window._odRelated = related;
+  }
+
+  // 내 오일 버튼 상태
+  updateOdMyOilBtn(oil.name_ko);
+  document.getElementById('od-myoil-btn').dataset.name = oil.name_ko;
+
+  showPage('page-oil-detail');
+}
+
+// ── MY PAGE ──────────────────────────────────────────────────
+function renderMyPage() {
+  if (!state.user) return;
+  const nick  = state.user.nickname || state.user.uid;
+  const init  = nick.charAt(0).toUpperCase();
+  document.getElementById('my-avatar').textContent  = init;
+  document.getElementById('my-name').textContent    = nick;
+  document.getElementById('my-uid-text').textContent= 'ID: ' + state.user.uid;
+  document.getElementById('my-oils-count').textContent = (state.user.my_oils?.length||0) + '개';
+  document.getElementById('my-fav-count').textContent  = (state.user.favorites?.length||0) + '개';
+
+  // 내 오일 체크박스 렌더
+  const grid = document.getElementById('oil-checkbox-grid');
+  const allOils = state.oils.length > 0
+    ? state.oils.map(o => o.name_ko)
+    : ['라벤더','페퍼민트','레몬','프랑킨센스','유칼립투스','베르가못','시더우드','티트리','온가드','딥블루','로즈마리','제라늄','일랑일랑','진저','오렌지','라임','자몽','코파이바','밸런스','세레니티'];
+  const mySet = new Set(state.user.my_oils || []);
+
+  grid.innerHTML = allOils.map(name => {
+    const on = mySet.has(name);
+    return `<label class="oil-check-item${on?' checked':''}" onclick="toggleOilCheck(this,'${name}')">
+      <div class="oil-check-dot"></div>
+      <span class="oil-check-name">${name}</span>
+    </label>`;
+  }).join('');
+
+  // 내 레시피 카운트
+  const myUid = state.user?.uid || '';
+  const myRecipeCount = state.recipes.filter(r => (r.source||'').trim() === myUid.trim()).length;
+  document.getElementById('my-recipe-count').textContent = myRecipeCount + '개';
+  document.getElementById('my-recipe-section').style.display = 'block';
+}
+
+
+// ── 내 오일 빠른 토글 (오일 그리드 카드) ────────────────────────
+async function toggleMyOilQuick(name, btn) {
+  const myOils = state.user?.my_oils || [];
+  const isAdding = !myOils.includes(name);
+  const updated = isAdding
+    ? [...new Set([...myOils, name])]
+    : myOils.filter(o => o !== name);
+
+  // 상태 업데이트
+  state.user.my_oils = updated;
+  localStorage.setItem('an_user', JSON.stringify(state.user));
+
+  // 모든 오일 카드 DOM 직접 업데이트 (재렌더 없이)
+  syncOilCardDom();
+
+  document.getElementById('my-oils-count').textContent = updated.length + '개';
+  toast(isAdding ? name + ' 추가됐어요' : name + ' 제거됐어요');
+  renderRecommend();
+
+  // API 저장 후 확정
+  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: updated.join(',') })
+    .then(r => {
+      if (r && r.success) {
+        state.user.my_oils = updated;
+        localStorage.setItem('an_user', JSON.stringify(state.user));
+      }
+    })
+    .catch(() => toast('저장 중 오류가 발생했어요'));
+}
+
+// 오일 카드 DOM 상태를 state.user.my_oils 기준으로 동기화
+function syncOilCardDom() {
+  const mySet = new Set(state.user?.my_oils || []);
+  document.querySelectorAll('.oil-card[data-oil-name]').forEach(card => {
+    const n = card.dataset.oilName;
+    const isMy = mySet.has(n);
+    card.classList.toggle('is-my', isMy);
+    const btn = card.querySelector('.myoil-btn');
+    if (btn) {
+      btn.classList.toggle('add', !isMy);
+      btn.classList.toggle('remove', isMy);
+      btn.textContent = isMy ? '−' : '＋';
+      btn.title = isMy ? '내 오일에서 제거' : '내 오일에 추가';
+    }
+  });
+}
+
+// ── 오일 상세에서 내 오일 토글 ──────────────────────────────────
+async function toggleMyOilFromDetail() {
+  const name = document.getElementById('od-myoil-btn').dataset.name;
+  if (!name) return;
+  const myOils = state.user?.my_oils || [];
+  const isAdding = !myOils.includes(name);
+  const updated = isAdding
+    ? [...new Set([...myOils, name])]   // 중복 방지
+    : myOils.filter(o => o !== name);
+
+  // UI 즉각 반응
+  state.user.my_oils = updated;
+  localStorage.setItem('an_user', JSON.stringify(state.user));
+  updateOdMyOilBtn(name);
+  document.getElementById('my-oils-count').textContent = updated.length + '개';
+  toast(isAdding ? name + ' 추가됐어요' : name + ' 제거됐어요');
+  renderRecommend();
+
+  // API는 백그라운드
+  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: updated.join(',') })
+    .catch(() => toast('저장 중 오류가 발생했어요'));
+}
+
+function filterOdRelated(cat, btn) {
+  // 칩 활성화
+  btn.closest('div').querySelectorAll('button').forEach(b => {
+    b.style.background = 'var(--surface)';
+    b.style.color = 'var(--text-2)';
+    b.style.borderColor = 'var(--border2)';
+  });
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#fff';
+  btn.style.borderColor = 'var(--accent)';
+
+  const list = cat === '전체'
+    ? window._odRelated
+    : window._odRelated.filter(r => r.category === cat);
+
+  const grid = document.getElementById('od-related-grid');
+  grid.style.padding = '0 18px';
+  grid.innerHTML = list.map(r => `
+    <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
+      <div class="rm-method">${r.category||r.method||''}</div>
+      <div class="rm-title">${r.title}</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
+    </div>`).join('');
+}
+
+function updateOdMyOilBtn(name) {
+  const btn = document.getElementById('od-myoil-btn');
+  if (!btn) return;
+  const isMy = (state.user?.my_oils || []).includes(name);
+  btn.textContent      = isMy ? '− 내 오일 제거' : '＋ 내 오일 추가';
+  btn.style.background = isMy ? 'rgba(80,85,100,0.10)' : 'var(--accent-l)';
+  btn.style.color      = isMy ? 'var(--text-2)'         : 'var(--accent)';
+}
+
+function toggleOilCheck(el, name) {
+  el.classList.toggle('checked');
+}
+
+async function saveMyOils() {
+  const checked = [...new Set(                          // 중복 방지
+    [...document.querySelectorAll('#oil-checkbox-grid .oil-check-item.checked')]
+      .map(el => el.querySelector('.oil-check-name').textContent.trim())
+  )];
+
+  // UI 즉각 반응
+  state.user.my_oils = checked;
+  localStorage.setItem('an_user', JSON.stringify(state.user));
+  document.getElementById('my-oils-count').textContent = checked.length + '개';
+  toast('내 오일을 저장했어요');
+  renderRecommend();
+  renderOilGrid(document.getElementById('oil-search').value, _activeTypeFilter);
+
+  // API 저장 후 서버 데이터로 확정
+  api({ action:'updateMyOils' }, 'POST', { uid: state.user.uid, oils: checked.join(',') })
+    .then(r => {
+      if (r && r.success) {
+        // 서버 저장 완료 — localStorage에 확정 반영
+        state.user.my_oils = checked;
+        localStorage.setItem('an_user', JSON.stringify(state.user));
+      }
+    })
+    .catch(() => toast('저장 중 오류가 발생했어요'));
+}
+
+function toggleMyOilsPanel() {
+  const p = document.getElementById('my-oils-panel');
+  const c = document.getElementById('myoil-chevron');
+  const open = p.classList.toggle('active');
+  c.textContent = open ? '∨' : '›';
+}
+
+function showFavList() {
+  const area   = document.getElementById('my-fav-list-area');
+  const isOpen = area.children.length > 0;
+  if (isOpen) { area.innerHTML = ''; return; }
+  const favIds = state.user?.favorites || [];
+  const favs   = favIds.map(id => state.recipes.find(r => r.id === id)).filter(Boolean);
+  if (!favs.length) { area.innerHTML = `<div style="padding:0 14px 14px"><div class="empty-box"><p>즐겨찾기한 레시피가 없어요.</p></div></div>`; return; }
+  area.innerHTML = `<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:8px">${favs.map(r=>`
+    <div class="fav-item" onclick="openRecipeDetail('${r.id}')">
+      <div><div class="fi-title">${r.title}</div><div class="fi-sub">${r.method||''} · ${r.category||''}</div></div>
+      <div class="fi-heart">♥</div>
+    </div>`).join('')}</div>`;
+}
+
+function showMyRecipes() {
+  // 내 레시피 모드 플래그 설정 후 탭 이동
+  state.myRecipeMode = true;
+  goTab('recipes');
+}
+
+// ── 닉네임 변경 ──────────────────────────────────────────────
+function openNickModal() {
+  document.getElementById('nick-input').value = state.user?.nickname || '';
+  document.getElementById('nick-modal').classList.add('open');
+}
+function closeNickModal() {
+  document.getElementById('nick-modal').classList.remove('open');
+}
+async function saveNickname() {
+  const nick = document.getElementById('nick-input').value.trim();
+  if (!nick) return;
+  const r = await api({ action:'saveUserData' }, 'POST', { uid: state.user.uid, nickname: nick });
+  if (!r.success) return toast(r.error || '오류가 발생했어요');
+  state.user.nickname = nick;
+  localStorage.setItem('an_user', JSON.stringify(state.user));
+  updateTopbar();
+  renderMyPage();
+  closeNickModal();
+  toast('닉네임을 변경했어요');
+}
+
+// ============================================================
+//  네비게이션
+// ============================================================
+const TAB_PAGES = { home:'page-home', recipes:'page-recipes', oils:'page-oils', mypage:'page-mypage' };
+
+function goTab(tab) {
+  state.prevPage = state.page;
+  state.page = tab;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(TAB_PAGES[tab]).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+  if (tab === 'mypage') renderMyPage();
+  if (tab === 'recipes') {
+    // 뒤로가기가 아닐 때만 검색창 + 필터 초기화
+    if (!state._isGoingBack) {
+      const searchEl = document.getElementById('recipe-search');
+      if (searchEl) searchEl.value = '';
+      _activeCategoryFilter = '전체';
+    }
+
+    if (state.myRecipeMode) {
+      // 마이페이지에서 나의 레시피 클릭
+      state.recipeMode = 'mine';
+      state.myRecipeMode = false;
+    } else if (!['all','my','mine','fav'].includes(state.recipeMode)) {
+      state.recipeMode = 'all';
+    }
+
+    // 모든 필터 버튼 상태 동기화
+    ['all','ood','my','mine','fav'].forEach(m => {
+      const btn = document.getElementById('filter-' + m + '-btn');
+      if (btn) btn.classList.toggle('on', state.recipeMode === m);
+    });
+
+    // 뒤로가기가 아닐 때만 카테고리 칩 초기화
+    if (!state._isGoingBack) {
+      _activeCategoryFilter = '전체';
+      document.querySelectorAll('#category-chips .chip').forEach((c,i) => c.classList.toggle('on', i===0));
+      renderRecipeList('', '전체');
+    } else {
+      // 뒤로가기 — 현재 필터 상태 그대로 재렌더
+      const currentCat = _activeCategoryFilter || '전체';
+      document.querySelectorAll('#category-chips .chip').forEach(c => {
+        c.classList.toggle('on', c.textContent.trim() === currentCat);
+      });
+      renderRecipeList(document.getElementById('recipe-search').value || '', currentCat);
+    }
+    return;
+
+  }
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  state.page = pageId;
+
+  // 상세 페이지 — prevPage 기반으로 네비 점 유지
+  const detailPages = ['page-recipe-detail','page-recipe-form','page-oil-detail'];
+  if (detailPages.includes(pageId)) {
+    const prev = state.prevPage || 'home';
+    const navId = 'nav-' + (prev === 'home' ? 'home' : prev === 'oils' ? 'oils' : prev === 'mypage' ? 'mypage' : 'recipes');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(navId).classList.add('active');
+  }
+}
+
+function goBack() {
+  const prev = state.prevPage || 'home';
+  state._isGoingBack = true;
+
+  let tab = 'home';
+  if (TAB_PAGES[prev]) {
+    tab = prev;
+  } else if (Object.values(TAB_PAGES).includes(prev)) {
+    tab = Object.keys(TAB_PAGES).find(k => TAB_PAGES[k] === prev) || 'home';
+  }
+
+  goTab(tab);
+  state._isGoingBack = false;
+
+  // 네비게이션 활성화 표시 확실히 복원
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + tab);
+  if (navEl) navEl.classList.add('active');
+}
+
+function focusSearch() {
+  const tab = state.page;
+  if (tab === 'page-oils') document.getElementById('oil-search').focus();
+  else { goTab('recipes'); setTimeout(() => document.getElementById('recipe-search').focus(), 150); }
+}
+
+// ============================================================
+//  Toast
+// ============================================================
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.innerHTML = '';
+  el.textContent = msg;
+  el.onclick = null;
+  el.classList.remove('clickable');
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show', 'clickable'), 2200);
+}
+
+
+// ============================================================
+//  스와이프 뒤로가기 — 왼쪽→오른쪽 (← 방향, iOS 네이티브)
+// ============================================================
+(function() {
+  const DETAIL_PAGES = ['page-recipe-detail', 'page-oil-detail', 'page-recipe-form'];
+  let startX = 0, startY = 0, tracking = false;
+
+  document.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    // 화면 왼쪽 끝 20px 안에서 시작한 경우에만 추적
+    tracking = startX < 30;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!tracking) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = Math.abs(e.changedTouches[0].clientY - startY);
+    // 수평 이동 60px 이상, 수직 이동 40px 이하
+    if (dx > 60 && dy < 40) {
+      const activePage = document.querySelector('.page.active');
+      if (activePage && DETAIL_PAGES.includes(activePage.id)) {
+        if (activePage.id === 'page-oil-detail')    goBack();
+        else if (activePage.id === 'page-recipe-detail') goBack();
+        else goBack();
+      }
+    }
+    tracking = false;
+  }, { passive: true });
+})();
+
+// ============================================================
+//  Start
+// ============================================================
+init();
+</script>
+</body>
+</html>
