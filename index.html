@@ -652,13 +652,13 @@ body { font-family: var(--sans); color: var(--text-1); }
   <div class="login-sub">아로마 레시피 & 오일 가이드</div>
   <div class="login-form">
     <!-- 탭 -->
-    <div style="display:flex;gap:0;background:var(--surface2);border-radius:var(--r-md);padding:4px;margin-bottom:4px">
-      <button id="tab-login"  onclick="switchLoginTab('login')"
-        style="flex:1;padding:8px;border:none;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.15s">
+    <div style="display:flex;border-bottom:2px solid var(--border2);margin-bottom:16px">
+      <button id="tab-login" onclick="switchLoginTab('login')"
+        style="flex:1;padding:10px;border:none;background:none;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;transition:all 0.15s">
         로그인
       </button>
       <button id="tab-signup" onclick="switchLoginTab('signup')"
-        style="flex:1;padding:8px;border:none;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--text-3);transition:all 0.15s">
+        style="flex:1;padding:10px;border:none;background:none;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s">
         가입 신청
       </button>
     </div>
@@ -1293,17 +1293,16 @@ function switchLoginTab(tab) {
   const submitBtn = document.getElementById('login-submit-btn');
   const hint      = document.getElementById('login-hint');
 
-  loginTab.style.background  = isLogin ? 'var(--accent)' : 'transparent';
-  loginTab.style.color       = isLogin ? '#fff' : 'var(--text-3)';
-  signupTab.style.background = isLogin ? 'transparent' : 'var(--accent)';
-  signupTab.style.color      = isLogin ? 'var(--text-3)' : '#fff';
+  loginTab.style.color        = isLogin ? 'var(--accent)' : 'var(--text-3)';
+  loginTab.style.borderBottom = isLogin ? '2px solid var(--accent)' : '2px solid transparent';
+  signupTab.style.color        = isLogin ? 'var(--text-3)' : 'var(--accent)';
+  signupTab.style.borderBottom = isLogin ? '2px solid transparent' : '2px solid var(--accent)';
 
   submitBtn.textContent = isLogin ? '로그인' : '가입 신청';
   submitBtn.onclick     = isLogin ? doLogin : doSignup;
-  hint.textContent      = isLogin
+  hint.textContent = isLogin
     ? '계정이 없으신가요? 가입 신청 탭을 눌러주세요'
-    : '아이디와 PIN을 입력하고 가입을 신청하세요.
-관리자 승인 후 이용 가능합니다.';
+    : '아이디와 PIN을 입력하고 가입을 신청하세요. 관리자 승인 후 이용 가능합니다.';
 }
 
 async function doSignup() {
