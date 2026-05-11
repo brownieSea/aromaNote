@@ -755,7 +755,6 @@ body { font-family: var(--sans); color: var(--text-1); }
       <button class="chip"    id="filter-my-btn"     onclick="setRecipeMode('my',this)">보유 오일</button>
       <button class="chip"    id="filter-mine-btn"   onclick="setRecipeMode('mine',this)">나의 레시피</button>
       <button class="chip"    id="filter-fav-btn"    onclick="setRecipeMode('fav',this)">즐겨찾기</button>
-      <button class="chip"    id="filter-all-btn"    onclick="setRecipeMode('all',this)">전체 레시피</button>
     </div>
     <div class="chip-row" id="category-chips"></div>
     <div style="padding:8px 18px 0;font-size:12px;color:var(--text-3)">
@@ -1608,8 +1607,8 @@ function goOodRecipes() {
       searchEl.value = oilName;
       onRecipeSearch(oilName);
     }
-    // 전체 레시피 모드로
-    setRecipeMode('all', document.getElementById('filter-all-btn'));
+    // 오늘의 오일 모드로
+    setRecipeMode('ood', document.getElementById('filter-ood-btn'));
   }, 50);
 }
 
@@ -1623,7 +1622,8 @@ function goMyOilRecipes() {
 function setRecipeMode(mode, el) {
   state.recipeMode = mode;
   document.getElementById('filter-ood-btn').classList.toggle('on', mode === 'ood');
-  document.getElementById('filter-all-btn').classList.toggle('on', mode === 'all');
+  const allBtn = document.getElementById('filter-all-btn');
+  if (allBtn) allBtn.classList.toggle('on', mode === 'all');
   document.getElementById('filter-my-btn').classList.toggle('on', mode === 'my');
   document.getElementById('filter-mine-btn').classList.toggle('on', mode === 'mine');
   document.getElementById('filter-fav-btn').classList.toggle('on', mode === 'fav');
@@ -2543,7 +2543,7 @@ function goTab(tab) {
     }
 
     // 모든 필터 버튼 상태 동기화
-    ['all','ood','my','mine','fav'].forEach(m => {
+    ['ood','my','mine','fav'].forEach(m => {
       const btn = document.getElementById('filter-' + m + '-btn');
       if (btn) btn.classList.toggle('on', state.recipeMode === m);
     });
