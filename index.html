@@ -1311,23 +1311,37 @@ async function doSignup() {
   if (!uid || uid.length < 2) return toast('아이디를 2자 이상 입력해주세요');
   if (!/^\d{4}$/.test(pin))   return toast('PIN은 숫자 4자리로 입력해주세요');
 
-  const r = await api({ action:'login' }, 'POST', { uid, pin, isSignup: true });
+  const btn  = document.getElementById('login-submit-btn');
+  const hint = document.getElementById('login-hint');
 
-  if (r.isPending) {
-    // 가입 신청 완료
-    document.getElementById('login-submit-btn').disabled = true;
-    document.getElementById('login-hint').innerHTML =
-      '✅ 가입 신청이 완료됐어요!<br>관리자 승인 후 로그인 가능합니다.';
-    toast('가입 신청이 완료됐어요!');
-    return;
-  }
-  if (!r.success) {
-    // 이미 있는 아이디
-    if (r.error === 'notfound') {
-      toast('이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요');
-    } else {
-      toast(r.message || r.error || '오류가 발생했어요');
+  // 로딩 상태
+  btn.disabled    = true;
+  btn.textContent = '신청 중...';
+  hint.textContent = '잠시만 기다려주세요...';
+
+  try {
+    const r = await api({ action:'login' }, 'POST', { uid, pin, isSignup: true });
+
+    if (r.isPending) {
+      hint.innerHTML = '✅ 가입 신청이 완료됐어요!<br>관리자 승인 후 로그인할 수 있어요.';
+      btn.textContent = '신청 완료';
+      return;
     }
+    if (!r.success) {
+      hint.textContent = '가입 신청 탭에서 아이디와 PIN을 입력하고 신청하세요.';
+      btn.disabled    = false;
+      btn.textContent = '가입 신청';
+      if (r.error === 'notfound') {
+        toast('이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요');
+      } else {
+        toast(r.message || r.error || '오류가 발생했어요');
+      }
+    }
+  } catch(e) {
+    hint.textContent = '오류가 발생했어요. 다시 시도해주세요.';
+    btn.disabled    = false;
+    btn.textContent = '가입 신청';
+    toast('오류가 발생했어요');
   }
 }
 
