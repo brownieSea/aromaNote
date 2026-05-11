@@ -769,7 +769,7 @@ body { font-family: var(--sans); color: var(--text-1); }
   <div class="page pb-nav" id="page-recipe-detail">
     <div class="detail-hero">
       <div style="position:absolute;top:14px;right:14px;display:flex;flex-direction:row;align-items:center;gap:6px;z-index:2">
-        <button onclick="goTab('recipes')" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.18);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <button onclick="goBack()" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.18);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">
           <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <button class="detail-fav-btn" id="d-fav-btn" onclick="toggleFav()">♡</button>
@@ -2638,7 +2638,7 @@ function toast(msg) {
       const activePage = document.querySelector('.page.active');
       if (activePage && DETAIL_PAGES.includes(activePage.id)) {
         if (activePage.id === 'page-oil-detail')    goBack();
-        else if (activePage.id === 'page-recipe-detail') goTab('recipes');
+        else if (activePage.id === 'page-recipe-detail') goBack();
         else goBack();
       }
     }
