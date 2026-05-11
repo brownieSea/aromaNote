@@ -1711,7 +1711,7 @@ function renderRecipeList(filter='', categoryFilter='전체') {
   el.innerHTML = list.map(r => `
     <div class="rl-item" onclick="openRecipeDetail('${r.id}')">
       <div class="rl-top">
-        <div class="rl-title">${r.title}</div>
+        <div class="rl-title">${r.title}${r.private === 'true' ? ' <span style="font-size:10px;background:var(--amber-l);color:var(--amber);padding:2px 7px;border-radius:10px;font-weight:500;vertical-align:middle">비공개</span>' : ''}</div>
         <span class="badge badge-blue">${r.method||''}</span>
       </div>
       <div class="rl-meta">
@@ -1752,7 +1752,8 @@ function openRecipeDetail(id, fromPage) {
   const isFav = (state.user?.favorites||[]).includes(id);
 
   document.getElementById('d-category').textContent = [r.category, r.sub_category].filter(Boolean).join(' · ');
-  document.getElementById('d-title').textContent    = r.title;
+  document.getElementById('d-title').innerHTML = r.title +
+    (r.private === 'true' ? ' <span style="font-size:11px;background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:10px;font-weight:400;vertical-align:middle">비공개</span>' : '');
   document.getElementById('d-fav-btn').textContent  = isFav ? '♥' : '♡';
   document.getElementById('d-fav-btn').dataset.id   = id;
   document.getElementById('d-tags').innerHTML = r.tags ? r.tags.split(' ').map(t=>`<span class="detail-tag">${t}</span>`).join('') : '';
