@@ -1192,9 +1192,6 @@ function renderAll() {
 
 async function afterLogin() {
   updateTopbar();
-  // 로딩 화면이 앱을 덮고 있으므로 깜빡임 없음
-  // page-home active 제거 (로딩 중엔 안 보이게)
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 
   // ── 캐시 있으면 즉시 렌더 ──
   const cached = localStorage.getItem('an_cache');
@@ -1206,10 +1203,9 @@ async function afterLogin() {
       if (c.recipes)    state.recipes    = c.recipes;
       if (c.oilImages)  state.oilImages  = c.oilImages;
     } catch(e) {}
-    hideLoading();
-    renderAll();
-    // 백그라운드 갱신 (실패해도 무관)
-    loadAllData();
+    renderAll();  // 먼저 렌더
+    hideLoading();  // 그 다음 로딩 숨기기 (깜빡임 방지)
+    loadAllData();  // 백그라운드 갱신
     return;
   }
 
