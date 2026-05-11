@@ -751,6 +751,7 @@ body { font-family: var(--sans); color: var(--text-1); }
       <button onclick="openAddRecipeForm()" style="flex-shrink:0;height:36px;padding:0 14px;border-radius:20px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);white-space:nowrap">＋ 새 레시피</button>
     </div>
     <div style="display:flex;gap:7px;padding:10px 18px 0;overflow-x:auto;scrollbar-width:none">
+      <button class="chip"    id="filter-all-btn"    onclick="setRecipeMode('all',this)">전체</button>
       <button class="chip on" id="filter-ood-btn"    onclick="setRecipeMode('ood',this)">오늘의 오일</button>
       <button class="chip"    id="filter-my-btn"     onclick="setRecipeMode('my',this)">보유 오일</button>
       <button class="chip"    id="filter-mine-btn"   onclick="setRecipeMode('mine',this)">나의 레시피</button>
@@ -1622,8 +1623,7 @@ function goMyOilRecipes() {
 function setRecipeMode(mode, el) {
   state.recipeMode = mode;
   document.getElementById('filter-ood-btn').classList.toggle('on', mode === 'ood');
-  const allBtn = document.getElementById('filter-all-btn');
-  if (allBtn) allBtn.classList.toggle('on', mode === 'all');
+  document.getElementById('filter-all-btn').classList.toggle('on', mode === 'all');
   document.getElementById('filter-my-btn').classList.toggle('on', mode === 'my');
   document.getElementById('filter-mine-btn').classList.toggle('on', mode === 'mine');
   document.getElementById('filter-fav-btn').classList.toggle('on', mode === 'fav');
@@ -2543,7 +2543,7 @@ function goTab(tab) {
     }
 
     // 모든 필터 버튼 상태 동기화
-    ['ood','my','mine','fav'].forEach(m => {
+    ['all','ood','my','mine','fav'].forEach(m => {
       const btn = document.getElementById('filter-' + m + '-btn');
       if (btn) btn.classList.toggle('on', state.recipeMode === m);
     });
