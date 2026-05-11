@@ -751,10 +751,11 @@ body { font-family: var(--sans); color: var(--text-1); }
       <button onclick="openAddRecipeForm()" style="flex-shrink:0;height:36px;padding:0 14px;border-radius:20px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);white-space:nowrap">＋ 새 레시피</button>
     </div>
     <div style="display:flex;gap:7px;padding:10px 18px 0;overflow-x:auto;scrollbar-width:none">
-      <button class="chip on" id="filter-all-btn"    onclick="setRecipeMode('all',this)">전체 레시피</button>
-      <button class="chip"    id="filter-my-btn"     onclick="setRecipeMode('my',this)">보유 오일 레시피</button>
+      <button class="chip on" id="filter-ood-btn"    onclick="setRecipeMode('ood',this)">오늘의 오일</button>
+      <button class="chip"    id="filter-my-btn"     onclick="setRecipeMode('my',this)">보유 오일</button>
       <button class="chip"    id="filter-mine-btn"   onclick="setRecipeMode('mine',this)">나의 레시피</button>
       <button class="chip"    id="filter-fav-btn"    onclick="setRecipeMode('fav',this)">즐겨찾기</button>
+      <button class="chip"    id="filter-all-btn"    onclick="setRecipeMode('all',this)">전체 레시피</button>
     </div>
     <div class="chip-row" id="category-chips"></div>
     <div style="padding:8px 18px 0;font-size:12px;color:var(--text-3)">
@@ -1086,7 +1087,7 @@ let state = {
   prevPage    : null,
   editRecipeId: null,
   oilImages   : {},
-  recipeMode  : 'all',  // 'all' | 'my'
+  recipeMode  : 'ood',  // 'ood' | 'all' | 'my' | 'mine' | 'fav'
   myRecipeMode: false,  // 내 레시피만 보기
 };
 
@@ -1125,10 +1126,7 @@ async function init() {
   const saved = localStorage.getItem('an_user');
   if (saved) {
     state.user = JSON.parse(saved);
-    // 앱 셸 미리 숨기고 로딩만 보이게
-    document.getElementById('app').style.visibility = 'hidden';
     await afterLogin();
-    document.getElementById('app').style.visibility = '';
     return;
   }
 
@@ -1194,6 +1192,9 @@ function renderAll() {
 
 async function afterLogin() {
   updateTopbar();
+  // 로딩 화면이 앱을 덮고 있으므로 깜빡임 없음
+  // page-home active 제거 (로딩 중엔 안 보이게)
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 
   // ── 캐시 있으면 즉시 렌더 ──
   const cached = localStorage.getItem('an_cache');
@@ -1326,6 +1327,8 @@ async function doSignup() {
     const r = await api({ action:'login' }, 'POST', { uid, pin, isSignup: true });
 
     if (r.isPending) {
+      document.getElementById('uid-input').value = '';
+      document.getElementById('pin-input').value = '';
       hint.innerHTML = '✅ 가입 신청이 완료됐어요!<br>관리자 승인 후 로그인할 수 있어요.';
       btn.textContent = '신청 완료';
       return;
@@ -1537,7 +1540,7 @@ function renderOodRecipes(oilName) {
   area.innerHTML = `
     <div class="section-hd" style="padding-top:14px">
       <h2>${oilName} 활용 레시피</h2>
-      <a onclick="goTab('recipes')" style="font-size:12px;color:var(--accent)">전체보기 →</a>
+      <a onclick="goOodRecipes()" style="font-size:12px;color:var(--accent)">전체보기 →</a>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">
       ${picked.map(r => `
@@ -1596,6 +1599,24 @@ function renderRecipePage() {
   renderRecipeList();
 }
 
+function goOodRecipes() {
+  // 오늘의 오일 이름 가져오기
+  const oilName = document.getElementById('ood-ko').textContent;
+  if (!oilName) { goTab('recipes'); return; }
+  state._oodFilter = oilName;
+  goTab('recipes');
+  setTimeout(() => {
+    // 검색창에 오늘의 오일명 입력
+    const searchEl = document.getElementById('recipe-search');
+    if (searchEl) {
+      searchEl.value = oilName;
+      onRecipeSearch(oilName);
+    }
+    // 전체 레시피 모드로
+    setRecipeMode('all', document.getElementById('filter-all-btn'));
+  }, 50);
+}
+
 function goMyOilRecipes() {
   goTab('recipes');
   setTimeout(() => {
@@ -1605,6 +1626,7 @@ function goMyOilRecipes() {
 
 function setRecipeMode(mode, el) {
   state.recipeMode = mode;
+  document.getElementById('filter-ood-btn').classList.toggle('on', mode === 'ood');
   document.getElementById('filter-all-btn').classList.toggle('on', mode === 'all');
   document.getElementById('filter-my-btn').classList.toggle('on', mode === 'my');
   document.getElementById('filter-mine-btn').classList.toggle('on', mode === 'mine');
@@ -1640,6 +1662,16 @@ function renderRecipeList(filter='', categoryFilter='전체') {
   if (state.recipeMode === 'fav') {
     const favIds = new Set(state.user?.favorites || []);
     list = list.filter(r => favIds.has(r.id));
+  }
+
+  // 오늘의 오일 모드
+  if (state.recipeMode === 'ood') {
+    const oilName = document.getElementById('ood-ko').textContent || '';
+    if (oilName) {
+      list = list.filter(r =>
+        r.oils_list && r.oils_list.split(',').map(o => o.trim()).includes(oilName)
+      );
+    }
   }
 
   if (categoryFilter && categoryFilter !== '전체')
@@ -2515,8 +2547,8 @@ function goTab(tab) {
     }
 
     // 모든 필터 버튼 상태 동기화
-    ['all','my','mine','fav'].forEach(m => {
-      const btn = document.getElementById('filter-' + (m==='all'?'all':m==='my'?'my':m==='mine'?'mine':'fav') + '-btn');
+    ['all','ood','my','mine','fav'].forEach(m => {
+      const btn = document.getElementById('filter-' + m + '-btn');
       if (btn) btn.classList.toggle('on', state.recipeMode === m);
     });
 
