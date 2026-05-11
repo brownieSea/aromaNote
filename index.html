@@ -2544,10 +2544,12 @@ function goTab(tab) {
   document.getElementById('nav-' + tab).classList.add('active');
   if (tab === 'mypage') renderMyPage();
   if (tab === 'recipes') {
-    // 탭 진입 시 검색창 + 필터 초기화
-    const searchEl = document.getElementById('recipe-search');
-    if (searchEl) searchEl.value = '';
-    _activeCategoryFilter = '전체';
+    // 뒤로가기가 아닐 때만 검색창 + 필터 초기화
+    if (!state._isGoingBack) {
+      const searchEl = document.getElementById('recipe-search');
+      if (searchEl) searchEl.value = '';
+      _activeCategoryFilter = '전체';
+    }
 
     if (state.myRecipeMode) {
       // 마이페이지에서 나의 레시피 클릭
@@ -2581,16 +2583,16 @@ function showPage(pageId) {
 
 function goBack() {
   const prev = state.prevPage || 'home';
-  // prevPage가 'home', 'recipes', 'oils', 'mypage' 같은 탭명인 경우
+  state._isGoingBack = true; // 뒤로가기 플래그
   if (TAB_PAGES[prev]) {
     goTab(prev);
-  // prevPage가 'page-home', 'page-recipes' 같은 페이지 ID인 경우
   } else if (Object.values(TAB_PAGES).includes(prev)) {
     const tab = Object.keys(TAB_PAGES).find(k => TAB_PAGES[k] === prev) || 'home';
     goTab(tab);
   } else {
     goTab('home');
   }
+  state._isGoingBack = false;
 }
 
 function focusSearch() {
