@@ -1386,6 +1386,14 @@ function doLogout() {
   if (!confirm('로그아웃 할까요?')) return;
   localStorage.removeItem('an_user');
   state.user = null;
+  state.page = 'home';
+  state.prevPage = null;
+  state.recipeMode = 'ood';
+  // 홈 탭 활성화 초기화
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-home').classList.add('active');
+  document.getElementById('nav-home').classList.add('active');
   showLoginScreen();
   document.getElementById('uid-input').value = '';
   document.getElementById('pin-input').value = '';
