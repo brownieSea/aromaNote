@@ -2565,10 +2565,19 @@ function goTab(tab) {
       if (btn) btn.classList.toggle('on', state.recipeMode === m);
     });
 
-    // 카테고리 칩 초기화
-    document.querySelectorAll('#category-chips .chip').forEach((c,i) => c.classList.toggle('on', i===0));
-
-    renderRecipeList('', '전체');
+    // 뒤로가기가 아닐 때만 카테고리 칩 초기화
+    if (!state._isGoingBack) {
+      _activeCategoryFilter = '전체';
+      document.querySelectorAll('#category-chips .chip').forEach((c,i) => c.classList.toggle('on', i===0));
+      renderRecipeList('', '전체');
+    } else {
+      // 뒤로가기 — 현재 필터 상태 그대로 재렌더
+      const currentCat = _activeCategoryFilter || '전체';
+      document.querySelectorAll('#category-chips .chip').forEach(c => {
+        c.classList.toggle('on', c.textContent.trim() === currentCat);
+      });
+      renderRecipeList(document.getElementById('recipe-search').value || '', currentCat);
+    }
     return;
 
   }
