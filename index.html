@@ -1125,11 +1125,14 @@ async function init() {
   const saved = localStorage.getItem('an_user');
   if (saved) {
     state.user = JSON.parse(saved);
+    // 앱 셸 미리 숨기고 로딩만 보이게
+    document.getElementById('app').style.visibility = 'hidden';
     await afterLogin();
+    document.getElementById('app').style.visibility = '';
     return;
   }
 
-  // 3. 세션 없으면 로그인 화면
+  // 3. 세션 없으면 바로 로그인 화면 (캐시 렌더 없이)
   hideLoading();
   showLoginScreen();
 }
