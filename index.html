@@ -1458,8 +1458,7 @@ function renderHome() {
   document.getElementById('ood-card').onclick = () => {
     const found = state.oils.find(o => o.name_ko === oil.ko);
     if (found) {
-      state.prevPage = 'home'; // 홈에서 온 것 명시
-      openOilDetail(found);
+      openOilDetail(found, 'home'); // 홈에서 온 것 명시
     } else {
       goTab('oils');
     }
@@ -2207,7 +2206,7 @@ function renderOilGrid(filter='', typeFilter='전체') {
   el.innerHTML = list.map(o => {
     const isMy = (state.user?.my_oils||[]).includes(o.name_ko);
     return `
-    <div class="oil-card ${isMy?'is-my':''}" data-oil-name="${o.name_ko}" style="position:relative" onclick="openOilDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
+    <div class="oil-card ${isMy?'is-my':''}" data-oil-name="${o.name_ko}" style="position:relative" onclick="openOilDetail(${JSON.stringify(o).replace(/"/g,'&quot;')},'oils')">
       <div class="oc-icon">${oilImgEl(o.name_ko,'36px','9px')}</div>
       <div class="oc-name">${o.name_ko}</div>
       <div class="oc-name-en">${o.name_en||''}</div>
@@ -2241,16 +2240,16 @@ function textToList(text) {
   return `<ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
 }
 
-function openOilDetail(oil) {
+function openOilDetail(oil, fromPage) {
   if (typeof oil === 'string') oil = state.oils.find(o => o.key === oil || o.name_ko === oil);
   if (!oil) return;
 
-  // 현재 활성 탭을 prevPage로 저장
-  const activeNavO = document.querySelector('.nav-item.active');
-  if (activeNavO) {
-    state.prevPage = activeNavO.id.replace('nav-', '');
+  // fromPage 명시되면 사용, 아니면 현재 활성 탭
+  if (fromPage) {
+    state.prevPage = fromPage;
   } else {
-    state.prevPage = state.page;
+    const activeNavO = document.querySelector('.nav-item.active');
+    state.prevPage = activeNavO ? activeNavO.id.replace('nav-', '') : state.page;
   }
   const odImgWrap = document.getElementById('od-img-wrap');
   const odUrl = oilImgUrl(oil.name_ko);
