@@ -651,10 +651,21 @@ body { font-family: var(--sans); color: var(--text-1); }
   <div class="login-logo">Aroma <em>Note</em></div>
   <div class="login-sub">아로마 레시피 & 오일 가이드</div>
   <div class="login-form">
+    <!-- 탭 -->
+    <div style="display:flex;gap:0;background:var(--surface2);border-radius:var(--r-md);padding:4px;margin-bottom:4px">
+      <button id="tab-login"  onclick="switchLoginTab('login')"
+        style="flex:1;padding:8px;border:none;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.15s">
+        로그인
+      </button>
+      <button id="tab-signup" onclick="switchLoginTab('signup')"
+        style="flex:1;padding:8px;border:none;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--text-3);transition:all 0.15s">
+        가입 신청
+      </button>
+    </div>
     <input class="login-input" id="uid-input" placeholder="아이디 (영문/숫자)" maxlength="20" autocomplete="username">
     <input class="login-input" id="pin-input" placeholder="PIN 번호 (4자리)" type="password" maxlength="4" inputmode="numeric" autocomplete="current-password">
-    <button class="login-btn" onclick="doLogin()">시작하기</button>
-    <div class="login-hint">처음이라면 아이디와 PIN을 입력하면<br>자동으로 계정이 만들어져요</div>
+    <button class="login-btn" id="login-submit-btn" onclick="doLogin()">로그인</button>
+    <div class="login-hint" id="login-hint">계정이 없으신가요? 가입 신청 탭을 눌러주세요</div>
   </div>
 </div>
 
@@ -1275,14 +1286,63 @@ function showLoginScreen() {
 // ============================================================
 //  로그인 / 로그아웃
 // ============================================================
+function switchLoginTab(tab) {
+  const isLogin = tab === 'login';
+  const loginTab  = document.getElementById('tab-login');
+  const signupTab = document.getElementById('tab-signup');
+  const submitBtn = document.getElementById('login-submit-btn');
+  const hint      = document.getElementById('login-hint');
+
+  loginTab.style.background  = isLogin ? 'var(--accent)' : 'transparent';
+  loginTab.style.color       = isLogin ? '#fff' : 'var(--text-3)';
+  signupTab.style.background = isLogin ? 'transparent' : 'var(--accent)';
+  signupTab.style.color      = isLogin ? 'var(--text-3)' : '#fff';
+
+  submitBtn.textContent = isLogin ? '로그인' : '가입 신청';
+  submitBtn.onclick     = isLogin ? doLogin : doSignup;
+  hint.textContent      = isLogin
+    ? '계정이 없으신가요? 가입 신청 탭을 눌러주세요'
+    : '아이디와 PIN을 입력하고 가입을 신청하세요.
+관리자 승인 후 이용 가능합니다.';
+}
+
+async function doSignup() {
+  const uid = document.getElementById('uid-input').value.trim();
+  const pin = document.getElementById('pin-input').value.trim();
+  if (!uid || uid.length < 2) return toast('아이디를 2자 이상 입력해주세요');
+  if (!/^\d{4}$/.test(pin))   return toast('PIN은 숫자 4자리로 입력해주세요');
+
+  const r = await api({ action:'login' }, 'POST', { uid, pin, isSignup: true });
+
+  if (r.isPending) {
+    // 가입 신청 완료
+    document.getElementById('login-submit-btn').disabled = true;
+    document.getElementById('login-hint').innerHTML =
+      '✅ 가입 신청이 완료됐어요!<br>관리자 승인 후 로그인 가능합니다.';
+    toast('가입 신청이 완료됐어요!');
+    return;
+  }
+  if (!r.success) {
+    // 이미 있는 아이디
+    if (r.error === 'notfound') {
+      toast('이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요');
+    } else {
+      toast(r.message || r.error || '오류가 발생했어요');
+    }
+  }
+}
+
 async function doLogin() {
   const uid = document.getElementById('uid-input').value.trim();
   const pin = document.getElementById('pin-input').value.trim();
   if (!uid || uid.length < 2) return toast('아이디를 2자 이상 입력해주세요');
   if (!/^\d{4}$/.test(pin))   return toast('PIN은 숫자 4자리로 입력해주세요');
 
-  const r = await api({ action:'login' }, 'POST', { uid, pin });
-  if (!r.success) return toast(r.error || '로그인 실패');
+  const r = await api({ action:'login' }, 'POST', { uid, pin, isSignup: false });
+  if (!r.success) {
+    toast(r.message || (r.error === 'pending' ? '승인 대기 중이에요' : r.error === 'notfound' ? '등록되지 않은 아이디예요' : '로그인 실패'));
+    return;
+  }
 
   state.user = {
     uid      : r.uid,
