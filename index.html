@@ -2585,23 +2585,37 @@ function goTab(tab) {
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
   state.page = pageId;
+
+  // 상세 페이지 — prevPage 기반으로 네비 점 유지
+  const detailPages = ['page-recipe-detail','page-recipe-form','page-oil-detail'];
+  if (detailPages.includes(pageId)) {
+    const prev = state.prevPage || 'home';
+    const navId = 'nav-' + (prev === 'home' ? 'home' : prev === 'oils' ? 'oils' : prev === 'mypage' ? 'mypage' : 'recipes');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(navId).classList.add('active');
+  }
 }
 
 function goBack() {
   const prev = state.prevPage || 'home';
-  state._isGoingBack = true; // 뒤로가기 플래그
+  state._isGoingBack = true;
+
+  let tab = 'home';
   if (TAB_PAGES[prev]) {
-    goTab(prev);
+    tab = prev;
   } else if (Object.values(TAB_PAGES).includes(prev)) {
-    const tab = Object.keys(TAB_PAGES).find(k => TAB_PAGES[k] === prev) || 'home';
-    goTab(tab);
-  } else {
-    goTab('home');
+    tab = Object.keys(TAB_PAGES).find(k => TAB_PAGES[k] === prev) || 'home';
   }
+
+  goTab(tab);
   state._isGoingBack = false;
+
+  // 네비게이션 활성화 표시 확실히 복원
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + tab);
+  if (navEl) navEl.classList.add('active');
 }
 
 function focusSearch() {
