@@ -1021,6 +1021,13 @@ body { font-family: var(--sans); color: var(--text-1); }
         </div>
         <div class="mr-right"><span class="mr-chevron">›</span></div>
       </div>
+      <div class="my-row" onclick="showHelp()">
+        <div class="mr-left">
+          <div class="mr-icon blue">❓</div>
+          <div><div class="mr-text">도움말</div></div>
+        </div>
+        <div class="mr-right"><span class="mr-chevron">›</span></div>
+      </div>
       <div class="my-row" onclick="doLogout()">
         <div class="mr-left">
           <div class="mr-icon gray">🚪</div>
@@ -1031,6 +1038,127 @@ body { font-family: var(--sans); color: var(--text-1); }
     </div>
 
     <div style="height:8px"></div>
+  </div>
+
+  <!-- HELP PAGE -->
+  <div class="page pb-nav" id="page-help">
+    <div class="topbar" style="position:sticky;top:0;z-index:10;background:var(--surface)">
+      <button onclick="goTab('mypage')" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);font-family:var(--sans)">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--text-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <div style="font-size:15px;font-weight:500">도움말</div>
+      <div style="width:34px"></div>
+    </div>
+    <div style="padding:18px;display:flex;flex-direction:column;gap:16px">
+
+      <!-- 앱 소개 -->
+      <div style="background:var(--accent);border-radius:var(--r-lg);padding:20px;color:#fff">
+        <div style="font-family:var(--serif);font-size:22px;margin-bottom:6px">Aroma Note</div>
+        <div style="font-size:13px;opacity:0.85;line-height:1.6">도테라 아로마 레시피와 오일 정보를<br>한 곳에서 관리하는 앱이에요.</div>
+      </div>
+
+      <!-- 홈 -->
+      <div class="detail-block">
+        <div class="db-label">🏠 홈 화면</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">오늘의 오일</b><br>
+            매일 다른 오일이 소개돼요. 탭하면 오일 상세 정보를 볼 수 있어요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">오늘의 오일 활용 레시피</b><br>
+            오늘의 오일이 들어간 레시피를 랜덤으로 3개 보여줘요. 전체보기를 누르면 해당 오일 레시피 전체를 볼 수 있어요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">내 오일로 만들 수 있어요</b><br>
+            보유한 오일로 바로 만들 수 있는 레시피를 랜덤으로 추천해줘요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">최근 등록 레시피</b><br>
+            가장 최근에 등록된 레시피 3개를 보여줘요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">즐겨찾기</b><br>
+            ♥ 표시한 레시피를 빠르게 확인할 수 있어요.
+          </div>
+        </div>
+      </div>
+
+      <!-- 레시피 -->
+      <div class="detail-block">
+        <div class="db-label">📋 레시피</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">필터</b><br>
+            • <b>오늘의 오일</b> — 오늘의 오일이 포함된 레시피<br>
+            • <b>보유 오일</b> — 내 오일로 바로 만들 수 있는 레시피<br>
+            • <b>나의 레시피</b> — 내가 직접 등록한 레시피<br>
+            • <b>즐겨찾기</b> — ♥ 표시한 레시피<br>
+            • <b>전체</b> — 모든 레시피
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">레시피 등록</b><br>
+            상단 <b>+ 새 레시피</b> 버튼을 눌러 레시피를 등록할 수 있어요.<br>
+            <b>나만 보기</b> 체크 시 본인과 관리자만 볼 수 있는 비공개 레시피로 저장돼요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">레시피 수정</b><br>
+            내가 등록한 레시피 상세화면에서 ✏️ 버튼으로 수정할 수 있어요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">공유 & 캡쳐</b><br>
+            레시피 상세에서 ↑ 버튼으로 링크 공유, ↓ 버튼으로 이미지 저장할 수 있어요.<br>
+            공유 링크를 받은 사람은 로그인 없이도 해당 레시피를 볼 수 있어요.
+          </div>
+        </div>
+      </div>
+
+      <!-- 오일 -->
+      <div class="detail-block">
+        <div class="db-label">💧 오일</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">오일 목록</b><br>
+            전체 오일을 가나다 순으로 보여줘요. 타입별로 필터링할 수 있어요.<br>
+            카드 우상단 <b>＋</b> 버튼으로 내 오일에 추가/제거할 수 있어요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">오일 상세</b><br>
+            오일 설명, 효능 및 사용방법, 주의사항, 관련 레시피를 볼 수 있어요.
+          </div>
+        </div>
+      </div>
+
+      <!-- 마이페이지 -->
+      <div class="detail-block">
+        <div class="db-label">👤 마이페이지</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">내 오일 관리</b><br>
+            보유한 오일을 등록하면 맞춤 레시피 추천을 받을 수 있어요.
+          </div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <b style="color:var(--text-1)">닉네임 변경</b><br>
+            홈 화면에 표시되는 이름을 변경할 수 있어요.
+          </div>
+        </div>
+      </div>
+
+      <!-- 팁 -->
+      <div style="background:var(--accent-l);border-radius:var(--r-md);padding:16px">
+        <div style="font-size:12px;font-weight:500;color:var(--accent);margin-bottom:8px">💡 유용한 팁</div>
+        <div style="font-size:12px;color:var(--text-2);line-height:1.8">
+          • 오일 목록에서 검색창에 효능이나 향을 입력하면 관련 오일을 찾을 수 있어요<br>
+          • 레시피 검색창에 오일명이나 증상을 입력해 레시피를 찾을 수 있어요<br>
+          • 상단 🔍 버튼을 누르면 어느 화면에서든 검색이 가능해요<br>
+          • 모바일에서 화면 좌측 끝에서 오른쪽으로 스와이프하면 뒤로 갈 수 있어요
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:11px;color:var(--text-3);padding:8px 0">
+        Aroma Note · 문의는 관리자에게
+      </div>
+    </div>
   </div>
 
   <!-- Bottom Nav -->
@@ -2512,6 +2640,14 @@ function toggleMyOilsPanel() {
   const c = document.getElementById('myoil-chevron');
   const open = p.classList.toggle('active');
   c.textContent = open ? '∨' : '›';
+}
+
+function showHelp() {
+  state.prevPage = state.page;
+  showPage('page-help');
+  // 네비 마이 탭 활성화 유지
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-mypage').classList.add('active');
 }
 
 function showFavList() {
