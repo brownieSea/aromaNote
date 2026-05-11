@@ -1718,7 +1718,14 @@ function openRecipeDetail(id) {
   const r = state.recipes.find(x => x.id === id);
   if (!r) return;
 
-  state.prevPage = state.page;
+  // 현재 활성 탭을 prevPage로 저장
+  const activeNav = document.querySelector('.nav-item.active');
+  if (activeNav) {
+    const navId = activeNav.id; // 'nav-home', 'nav-recipes' 등
+    state.prevPage = navId.replace('nav-', '');
+  } else {
+    state.prevPage = state.page;
+  }
   const isFav = (state.user?.favorites||[]).includes(id);
 
   document.getElementById('d-category').textContent = [r.category, r.sub_category].filter(Boolean).join(' · ');
@@ -2235,7 +2242,14 @@ function openOilDetail(oil) {
   if (typeof oil === 'string') oil = state.oils.find(o => o.key === oil || o.name_ko === oil);
   if (!oil) return;
 
-  state.prevPage = state.page;
+  // 현재 활성 탭을 prevPage로 저장
+  const activeNav = document.querySelector('.nav-item.active');
+  if (activeNav) {
+    const navId = activeNav.id;
+    state.prevPage = navId.replace('nav-', '');
+  } else {
+    state.prevPage = state.page;
+  }
   const odImgWrap = document.getElementById('od-img-wrap');
   const odUrl = oilImgUrl(oil.name_ko);
   if (odUrl) {
@@ -2566,7 +2580,11 @@ function showPage(pageId) {
 
 function goBack() {
   const prev = state.prevPage || 'home';
-  if (Object.values(TAB_PAGES).includes(prev)) {
+  // prevPage가 'home', 'recipes', 'oils', 'mypage' 같은 탭명인 경우
+  if (TAB_PAGES[prev]) {
+    goTab(prev);
+  // prevPage가 'page-home', 'page-recipes' 같은 페이지 ID인 경우
+  } else if (Object.values(TAB_PAGES).includes(prev)) {
     const tab = Object.keys(TAB_PAGES).find(k => TAB_PAGES[k] === prev) || 'home';
     goTab(tab);
   } else {
