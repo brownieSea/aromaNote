@@ -1457,8 +1457,12 @@ function renderHome() {
   document.getElementById('ood-tags').innerHTML   = oil.tags.map(t => `<span class="ood-tag">${t}</span>`).join('');
   document.getElementById('ood-card').onclick = () => {
     const found = state.oils.find(o => o.name_ko === oil.ko);
-    if (found) openOilDetail(found);
-    else goTab('oils');
+    if (found) {
+      state.prevPage = 'home'; // 홈에서 온 것 명시
+      openOilDetail(found);
+    } else {
+      goTab('oils');
+    }
   };
 
   // 오늘의 오일 관련 레시피
@@ -1540,7 +1544,7 @@ function renderOodRecipes(oilName) {
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px;box-sizing:border-box">
       ${picked.map(r => `
-        <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}')">
+        <div class="recipe-mini" style="width:auto;flex-shrink:1" onclick="openRecipeDetail('${r.id}','home')">
           <div class="rm-method">${r.category||r.method||''}</div>
           <div class="rm-title">${r.title}</div>
           <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
@@ -1559,7 +1563,7 @@ function renderRecentRecipes() {
 
   area.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 18px 4px">
     ${recent.map(r => `
-      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
+      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}','home')">
         <div class="rm-method">${r.category||r.method||''}</div>
         <div class="rm-title">${r.title}</div>
         <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
@@ -1576,7 +1580,7 @@ function renderHomeFav() {
   }
   const favs = favIds.map(id => state.recipes.find(r => r.id === id)).filter(Boolean).slice(0,3);
   el.innerHTML = favs.map(r => `
-    <div class="fav-item" onclick="openRecipeDetail('${r.id}')">
+    <div class="fav-item" onclick="openRecipeDetail('${r.id}','home')">
       <div>
         <div class="fi-title">${r.title}</div>
         <div class="fi-sub">${r.method||''} · ${r.category||''}</div>
@@ -1714,17 +1718,16 @@ function filterRecipes(cat, el) {
 }
 
 // ── RECIPE DETAIL ────────────────────────────────────────────
-function openRecipeDetail(id) {
+function openRecipeDetail(id, fromPage) {
   const r = state.recipes.find(x => x.id === id);
   if (!r) return;
 
-  // 현재 활성 탭을 prevPage로 저장
-  const activeNav = document.querySelector('.nav-item.active');
-  if (activeNav) {
-    const navId = activeNav.id; // 'nav-home', 'nav-recipes' 등
-    state.prevPage = navId.replace('nav-', '');
+  // fromPage가 명시되면 사용, 아니면 현재 활성 탭
+  if (fromPage) {
+    state.prevPage = fromPage;
   } else {
-    state.prevPage = state.page;
+    const activeNavR = document.querySelector('.nav-item.active');
+    state.prevPage = activeNavR ? activeNavR.id.replace('nav-', '') : state.page;
   }
   const isFav = (state.user?.favorites||[]).includes(id);
 
@@ -2243,10 +2246,9 @@ function openOilDetail(oil) {
   if (!oil) return;
 
   // 현재 활성 탭을 prevPage로 저장
-  const activeNav = document.querySelector('.nav-item.active');
-  if (activeNav) {
-    const navId = activeNav.id;
-    state.prevPage = navId.replace('nav-', '');
+  const activeNavO = document.querySelector('.nav-item.active');
+  if (activeNavO) {
+    state.prevPage = activeNavO.id.replace('nav-', '');
   } else {
     state.prevPage = state.page;
   }
@@ -2290,7 +2292,7 @@ function openOilDetail(oil) {
     ).join('');
 
     const gridHtml = (list) => list.map(r => `
-      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}')">
+      <div class="recipe-mini" style="width:auto" onclick="openRecipeDetail('${r.id}','home')">
         <div class="rm-method">${r.category||r.method||''}</div>
         <div class="rm-title">${r.title}</div>
         <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">${(r.oils_list||'').split(',').filter(Boolean).map(o=>o.trim()).join(' · ')}</div>
