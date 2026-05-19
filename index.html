@@ -685,7 +685,7 @@ body { font-family: var(--sans); color: var(--text-1); }
 <div id="app">
   <!-- Topbar -->
   <div class="topbar">
-    <div class="logo" onclick="goTab('home')" style="cursor:pointer">Aroma <em>Note</em></div>
+    <div class="logo">Aroma <em>Note</em></div>
     <div class="topbar-actions">
       <button class="icon-btn" id="search-btn" onclick="focusSearch()" title="검색">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
@@ -909,7 +909,19 @@ body { font-family: var(--sans); color: var(--text-1); }
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       <input id="oil-search" placeholder="오일 이름, 효능, 향 검색..." oninput="onOilSearch(this.value)">
     </div>
-    <div class="chip-row" id="oil-type-chips"></div>
+    <div style="display:flex;align-items:center;padding:10px 18px 0;gap:7px">
+      <div style="display:flex;gap:7px;overflow-x:auto;flex:1;scrollbar-width:none" id="oil-type-chips"></div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button id="oil-have-btn" onclick="setOilHaveFilter('have',this)"
+          style="font-size:12px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--green);background:var(--surface);color:var(--green);cursor:pointer;font-family:var(--sans);white-space:nowrap;transition:all 0.15s">
+          보유
+        </button>
+        <button id="oil-nothave-btn" onclick="setOilHaveFilter('nothave',this)"
+          style="font-size:12px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--rose);background:var(--surface);color:var(--rose);cursor:pointer;font-family:var(--sans);white-space:nowrap;transition:all 0.15s">
+          미보유
+        </button>
+      </div>
+    </div>
     <div class="oil-grid" id="oil-grid" style="padding-bottom:12px"></div>
   </div>
 
@@ -1223,6 +1235,7 @@ let state = {
   oilImages   : {},
   recipeMode  : 'ood',  // 'ood' | 'all' | 'my' | 'mine' | 'fav'
   myRecipeMode: false,  // 내 레시피만 보기
+  oilHaveFilter: '',    // 'have' | 'nothave' | ''
 };
 
 // ============================================================
@@ -2352,6 +2365,14 @@ function renderOilGrid(filter='', typeFilter='전체') {
   let list = [...state.oils].sort((a, b) => a.name_ko.localeCompare(b.name_ko, 'ko'));
   if (typeFilter && typeFilter !== '전체') list = list.filter(o => o.type === typeFilter);
   if (filter) list = list.filter(o => (o.name_ko+o.name_en+o.keyword+o.description).toLowerCase().includes(filter.toLowerCase()));
+  // 보유/미보유 필터
+  if (state.oilHaveFilter === 'have') {
+    const mySet = new Set(state.user?.my_oils || []);
+    list = list.filter(o => mySet.has(o.name_ko));
+  } else if (state.oilHaveFilter === 'nothave') {
+    const mySet = new Set(state.user?.my_oils || []);
+    list = list.filter(o => !mySet.has(o.name_ko));
+  }
   if (!list.length) {
     el.innerHTML = `<div class="empty-box" style="grid-column:1/-1;margin:0"><p>오일 정보가 없어요.</p></div>`;
     return;
@@ -2383,6 +2404,24 @@ function filterOils(type, el) {
   document.querySelectorAll('#oil-type-chips .chip').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
   renderOilGrid(document.getElementById('oil-search').value, type);
+}
+
+function setOilHaveFilter(mode, btn) {
+  // 토글
+  if (state.oilHaveFilter === mode) {
+    state.oilHaveFilter = '';
+    document.getElementById('oil-have-btn').style.background    = 'var(--surface)';
+    document.getElementById('oil-nothave-btn').style.background = 'var(--surface)';
+    document.getElementById('oil-have-btn').style.color    = 'var(--green)';
+    document.getElementById('oil-nothave-btn').style.color = 'var(--rose)';
+  } else {
+    state.oilHaveFilter = mode;
+    document.getElementById('oil-have-btn').style.background    = mode === 'have'    ? 'var(--green)'  : 'var(--surface)';
+    document.getElementById('oil-have-btn').style.color         = mode === 'have'    ? '#fff'          : 'var(--green)';
+    document.getElementById('oil-nothave-btn').style.background = mode === 'nothave' ? 'var(--rose)'   : 'var(--surface)';
+    document.getElementById('oil-nothave-btn').style.color      = mode === 'nothave' ? '#fff'          : 'var(--rose)';
+  }
+  renderOilGrid(document.getElementById('oil-search').value, _activeTypeFilter);
 }
 
 // 줄바꿈 텍스트 → ul 리스트로 변환
