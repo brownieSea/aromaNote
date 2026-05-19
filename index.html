@@ -1902,7 +1902,7 @@ function openRecipeDetail(id, fromPage) {
     const oilName = (o.oil || '').trim().replace(/\s+/g, ' ');
     const have = myOilSet.size > 0 && myOilSet.has(oilName);
     const oilData = state.oils.find(x => x.name_ko === oilName);
-    const clickable = oilData ? `onclick="openOilDetail(${JSON.stringify(oilData).replace(/"/g,'&quot;')},'recipes')" style="cursor:pointer"` : '';
+    const clickable = oilData ? `onclick="event.stopPropagation();openOilDetailFromRecipe(${JSON.stringify(oilData).replace(/"/g,'&quot;')})" style="cursor:pointer"` : '';
     return `<div class="oil-row${have ? '' : ' oil-row-missing'}" ${clickable}>
       <span class="oil-row-name">${o.oil}${have ? '' : ' <span class="no-oil-badge">미보유</span>'}</span>
       <span class="oil-row-drops">${o.drops}</span>
@@ -2393,17 +2393,24 @@ function textToList(text) {
   return `<ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
 }
 
+function openOilDetailFromRecipe(oil) {
+  // 레시피 상세에서 호출 — Back 시 레시피 상세로 돌아오게
+  state.prevPage = 'page-recipe-detail';
+  openOilDetail(oil, null); // fromPage null로 — 내부에서 prevPage 덮어쓰지 않게
+}
+
 function openOilDetail(oil, fromPage) {
   if (typeof oil === 'string') oil = state.oils.find(o => o.key === oil || o.name_ko === oil);
   if (!oil) return;
 
-  // fromPage 명시되면 사용, 아니면 현재 활성 탭
-  if (fromPage) {
+  // fromPage 명시되면 사용, null이면 prevPage 유지, undefined면 현재 탭
+  if (fromPage !== null && fromPage !== undefined) {
     state.prevPage = fromPage;
-  } else {
+  } else if (fromPage === undefined) {
     const activeNavO = document.querySelector('.nav-item.active');
     state.prevPage = activeNavO ? activeNavO.id.replace('nav-', '') : state.page;
   }
+  // fromPage === null 이면 기존 state.prevPage 유지
   const odImgWrap = document.getElementById('od-img-wrap');
   const odUrl = oilImgUrl(oil.name_ko);
   if (odUrl) {
@@ -2762,6 +2769,16 @@ function showPage(pageId) {
 function goBack() {
   const prev = state.prevPage || 'home';
   state._isGoingBack = true;
+
+  // prevPage가 페이지 ID인 경우 (page-recipe-detail 등)
+  if (prev === 'page-recipe-detail') {
+    state._isGoingBack = false;
+    // 레시피 상세 페이지로 직접 이동 (데이터는 이미 있음)
+    showPage('page-recipe-detail');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('nav-recipes').classList.add('active');
+    return;
+  }
 
   let tab = 'home';
   if (TAB_PAGES[prev]) {
