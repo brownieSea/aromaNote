@@ -685,7 +685,7 @@ body { font-family: var(--sans); color: var(--text-1); }
 <div id="app">
   <!-- Topbar -->
   <div class="topbar">
-    <div class="logo" onclick="goTab('home')" style="cursor:pointer">Aroma <em>Note</em></div>
+    <div class="logo">Aroma <em>Note</em></div>
     <div class="topbar-actions">
       <button class="icon-btn" id="search-btn" onclick="focusSearch()" title="검색">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
@@ -939,7 +939,10 @@ body { font-family: var(--sans); color: var(--text-1); }
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
           <div>
             <div class="oil-detail-name" id="od-name"></div>
-            <div class="oil-detail-en"   id="od-en"></div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <div class="oil-detail-en" id="od-en" style="margin-bottom:0"></div>
+              <div id="od-price-pv" style="font-size:12px;color:#666;letter-spacing:0.2px"></div>
+            </div>
           </div>
           <button id="od-myoil-btn" onclick="toggleMyOilFromDetail()" style="flex-shrink:0;margin-top:6px;padding:7px 14px;border-radius:20px;border:none;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s"></button>
         </div>
@@ -2459,6 +2462,13 @@ function openOilDetail(oil, fromPage) {
   }
   document.getElementById('od-name').textContent    = oil.name_ko;
   document.getElementById('od-en').textContent      = oil.name_en || '';
+  // 가격 / PV
+  const pricePvEl = document.getElementById('od-price-pv');
+  if (pricePvEl) {
+    const price = oil.price ? Number(oil.price).toLocaleString('ko-KR') + '원' : '';
+    const pv    = oil.pv    ? oil.pv + 'PV' : '';
+    pricePvEl.textContent = (price && pv) ? price + '  /  ' + pv : (price || pv);
+  }
   // L열(keyword) — 상단 키워드 태그
   document.getElementById('od-keywords').innerHTML = oil.keyword
     ? oil.keyword.split(',').map(k => `<span class="ood-tag" style="background:rgba(74,111,165,0.12);color:var(--accent)">${k.trim()}</span>`).join('')
