@@ -687,7 +687,7 @@ body { font-family: var(--sans); color: var(--text-1); }
   <div class="topbar">
     <div class="logo">Aroma <em>Note</em></div>
     <div class="topbar-actions">
-      <button class="icon-btn" id="search-btn" onclick="focusSearch()" title="검색">
+      <button class="icon-btn" id="search-btn" onclick="openSearch()" title="검색">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
       <div class="avatar-btn" id="avatar-btn" onclick="goTab('mypage')">—</div>
@@ -746,7 +746,7 @@ body { font-family: var(--sans); color: var(--text-1); }
     <div style="display:flex;align-items:center;gap:8px;padding:14px 18px 0">
       <div class="search-row" style="margin:0;flex:1">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="recipe-search" placeholder="레시피, 오일, 증상 검색..." oninput="onRecipeSearch(this.value)">
+        <input id="recipe-search" placeholder="레시피 검색..." oninput="onRecipeSearch(this.value)">
       </div>
       <button onclick="openAddRecipeForm()" style="flex-shrink:0;height:36px;padding:0 14px;border-radius:20px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);white-space:nowrap">＋ 새 레시피</button>
     </div>
@@ -1053,6 +1053,17 @@ body { font-family: var(--sans); color: var(--text-1); }
     </div>
 
     <div style="height:8px"></div>
+  </div>
+
+  <!-- SEARCH PAGE -->
+  <div class="page pb-nav" id="page-search">
+    <div class="topbar" style="position:sticky;top:0;z-index:10;background:var(--surface);gap:8px">
+      <button onclick="closeSearch()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;padding:4px">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <input id="global-search" placeholder="오일, 레시피, 증상 검색..." oninput="onGlobalSearch(this.value)" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:14px;font-family:var(--sans);background:var(--bg);outline:none">
+    </div>
+    <div id="global-results" style="padding:6px 18px 18px"></div>
   </div>
 
   <!-- HELP PAGE -->
@@ -2809,6 +2820,7 @@ function showPage(pageId) {
   const detailPages = ['page-recipe-detail','page-recipe-form','page-oil-detail'];
   if (detailPages.includes(pageId)) {
     const prev = state.prevPage || 'home';
+    if (prev === 'page-search') { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); return; }
     const navId = 'nav-' + (prev === 'home' ? 'home' : prev === 'oils' ? 'oils' : prev === 'mypage' ? 'mypage' : 'recipes');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById(navId).classList.add('active');
@@ -2829,6 +2841,13 @@ function goBack() {
     return;
   }
 
+  if (prev === 'page-search') {
+    state._isGoingBack = false;
+    showPage('page-search');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    return;
+  }
+
   let tab = 'home';
   if (TAB_PAGES[prev]) {
     tab = prev;
@@ -2845,11 +2864,103 @@ function goBack() {
   if (navEl) navEl.classList.add('active');
 }
 
-function focusSearch() {
-  const tab = state.page;
-  if (tab === 'page-oils') document.getElementById('oil-search').focus();
-  else { goTab('recipes'); setTimeout(() => document.getElementById('recipe-search').focus(), 150); }
+// ============================================================
+//  통합 검색 (오일 + 레시피)
+// ============================================================
+let _searchOrigin = 'home';
+let _gsTimer;
+function openSearch() {
+  if (state.page !== 'page-search') {
+    const act = document.querySelector('.nav-item.active');
+    _searchOrigin = act ? act.id.replace('nav-', '') : 'home';
+  }
+  state.prevPage = 'page-search';
+  showPage('page-search');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const inp = document.getElementById('global-search');
+  renderGlobalResults(inp.value);
+  setTimeout(() => inp.focus(), 100);
 }
+function closeSearch() { goTab(TAB_PAGES[_searchOrigin] ? _searchOrigin : 'home'); }
+function onGlobalSearch(q) {
+  clearTimeout(_gsTimer);
+  _gsTimer = setTimeout(() => renderGlobalResults(q), 200);
+}
+function _esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function _snippet(text, terms) {
+  text = String(text || '').replace(/\s+/g, ' ').trim();
+  const low = text.toLowerCase();
+  let idx = -1;
+  for (const t of terms) { const i = low.indexOf(t); if (i >= 0 && (idx < 0 || i < idx)) idx = i; }
+  if (idx < 0) return '';
+  const start = Math.max(0, idx - 15);
+  let out = (start > 0 ? '…' : '') + text.slice(start, start + 60) + (start + 60 < text.length ? '…' : '');
+  out = _esc(out);
+  terms.forEach(t => {
+    const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    out = out.replace(re, '<mark style="background:#fff3b0;color:inherit;padding:0 1px;border-radius:2px">$1</mark>');
+  });
+  return out;
+}
+function renderGlobalResults(q) {
+  const el = document.getElementById('global-results');
+  const terms = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) {
+    el.innerHTML = '<div class="empty-box" style="margin:30px 0"><p>오일 이름, 효능, 증상, 레시피 재료 등<br>궁금한 키워드를 입력해보세요.</p></div>';
+    return;
+  }
+  const matchAll = fields => {
+    const hay = fields.join(' ').toLowerCase();
+    return terms.every(t => hay.includes(t));
+  };
+  // 오일
+  const oilFields = o => [o.name_ko, o.name_en, o.keyword, o.desc_short, o.description, o.benefits_summary, o.benefits, o.scent, o.type, o.category, o.ingredients, o.cautions];
+  const oils = state.oils.filter(o => matchAll(oilFields(o).map(v => v || '')))
+    .sort((a, b) => a.name_ko.localeCompare(b.name_ko, 'ko'));
+  // 레시피 (비공개 필터)
+  const uid = state.user?.uid || '';
+  const isAdmin = ADMIN_UIDS.includes(uid);
+  const recFields = r => [r.title, r.oils_list, r.tags, r.category, r.sub_category, r.method, r.base_materials, r.how_to_make, r.how_to_use, r.apply_area, r.caution, r.notes];
+  const recipes = state.recipes.filter(r => {
+    if (r.private && r.private !== 'false' && !(isAdmin || (r.source || '').trim() === uid.trim())) return false;
+    return matchAll(recFields(r).map(v => v || ''));
+  }).sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+
+  if (!oils.length && !recipes.length) {
+    el.innerHTML = '<div class="empty-box" style="margin:30px 0"><p>검색 결과가 없어요.<br>다른 키워드로 찾아보세요.</p></div>';
+    return;
+  }
+  const head = (label, n) => '<div style="font-size:13px;font-weight:600;color:var(--text-2);margin:16px 0 8px">' + label + ' <span style="color:var(--accent)">' + n + '</span></div>';
+  const row = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md,12px);margin-bottom:8px;cursor:pointer';
+  let h = '';
+  if (oils.length) {
+    h += head('오일', oils.length);
+    oils.forEach(o => {
+      const img = oilImgUrl(o.name_ko);
+      const sn = _snippet([o.keyword, o.desc_short, o.benefits_summary, o.benefits, o.description, o.scent].join(' / '), terms);
+      h += '<div style="' + row + '" onclick="openOilDetail(\'' + o.name_ko.replace(/'/g, "\\'") + '\',\'page-search\')">' +
+        '<div style="width:42px;height:42px;border-radius:10px;background:var(--bg);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">' +
+        (img ? '<img src="' + img + '" style="width:100%;height:100%;object-fit:cover">' : '💧') + '</div>' +
+        '<div style="min-width:0;flex:1"><div style="font-size:14px;font-weight:500">' + _esc(o.name_ko) +
+        ' <span style="font-size:11px;color:var(--text-3);font-weight:400">' + _esc(o.name_en) + '</span></div>' +
+        (sn ? '<div style="font-size:12px;color:var(--text-3);margin-top:2px;line-height:1.4">' + sn + '</div>' : '') + '</div></div>';
+    });
+  }
+  if (recipes.length) {
+    h += head('레시피', recipes.length);
+    recipes.forEach(r => {
+      const sn = _snippet([r.tags, r.how_to_make, r.how_to_use, r.apply_area, r.caution, r.notes, r.base_materials].join(' / '), terms);
+      h += '<div style="' + row + '" onclick="openRecipeDetail(\'' + String(r.id).replace(/'/g, "\\'") + '\',\'page-search\')">' +
+        '<div style="min-width:0;flex:1"><div style="font-size:11px;color:var(--text-3)">' + _esc(r.category || r.method) + '</div>' +
+        '<div style="font-size:14px;font-weight:500;margin-top:1px">' + _esc(r.title) + '</div>' +
+        '<div style="font-size:12px;color:var(--text-2);margin-top:2px">' + _esc((r.oils_list || '').split(',').map(x => x.trim()).filter(Boolean).join(' · ')) + '</div>' +
+        (sn ? '<div style="font-size:12px;color:var(--text-3);margin-top:3px;line-height:1.4">' + sn + '</div>' : '') + '</div></div>';
+    });
+  }
+  el.innerHTML = h;
+}
+
+function focusSearch() { openSearch(); }
 
 // ============================================================
 //  Toast
